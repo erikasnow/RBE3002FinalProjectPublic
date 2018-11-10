@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import rospy
-
+from map_helper import *
 
 class A_Star:
 
@@ -9,10 +9,12 @@ class A_Star:
         """
             This node handle A star paths requests.
             It is accessed using a service call. It can the publish grid cells
-            to show the frontier,closed and path.
+            to show the frontier, closed and path.
         """
 
         rospy.init_node("a_star")  # start node
+        self.initSubscriber = rospy.Subscriber('initialpose', PoseWithCovarianceStamped, self.display_start)
+        self.initPublisher = rospy.Publisher('initcell', GridCells, queue_size=1)
  
 
     def handle_a_star(self, req):
@@ -75,7 +77,7 @@ class A_Star:
             :param came_from: dictionary of tuples
             :return: list of tuples
        """
-       pass
+        pass
   
 
     def optimize_path(self, path):
@@ -105,6 +107,67 @@ class A_Star:
         """
         pass
 
+    def display_start(self, msg):
+        """
+        Get pose of initial location from rviz click and paint corresponding cell blue
+        :param msg:
+        :return:
+        """
+        header = msg.header
+        header.stamp = rospy.Time.now()
+
+        point = Point()
+        point.x = msg.pose.pose.position.x
+        point.y = msg.pose.pose.position.y
+
+        print("old point: " + str(point))
+
+        point = self.togrid(point)
+
+        print("new point: " + str(point))
+
+        points = []
+        points.append(point)
+
+        initcell = GridCells()
+        initcell.header = header
+        initcell.cell_width = 0.252
+        initcell.cell_height = 0.252
+        initcell.cells = points
+
+        testpoint = Point()
+        testpoints = []
+        testpoints.append(testpoint)
+        testcell = GridCells()
+        testcell.header = header
+        testcell.cell_width = 0.252
+        testcell.cell_height = 0.252
+        testcell.cells = testpoints
+
+        self.initPublisher.publish(initcell)
+
+    def togrid(self, point):
+        """
+        Move point from click to center of grid cell
+        :param point:
+        :return: point
+        """
+        cell_size = 0.252
+        x = point.x
+        y = point.y
+
+        x = x - (x % cell_size) + (cell_size / 2)
+        y = y - (y % cell_size) + (cell_size / 2)
+
+        point.x = x
+        point.y = y
+
+        return point
+
 
 if __name__ == '__main__':
+    alg = A_Star()
+    print("made algorithm")
+    rospy.sleep(1)
+    rospy.spin()
     pass

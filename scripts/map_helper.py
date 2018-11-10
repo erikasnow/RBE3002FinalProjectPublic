@@ -20,8 +20,6 @@ def is_valid_loc(loc, my_map):
         :return: boolean is a legal point
     """
 
-  
-
 
 def convert_location(loc, my_map):
     """converts points to the grid"""
