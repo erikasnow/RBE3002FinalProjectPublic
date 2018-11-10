@@ -13,8 +13,13 @@ class A_Star:
         """
 
         rospy.init_node("a_star")  # start node
+        # for setting initial position on map
         self.initSubscriber = rospy.Subscriber('initialpose', PoseWithCovarianceStamped, self.display_start)
         self.initPublisher = rospy.Publisher('initcell', GridCells, queue_size=1)
+
+        # for setting goal position on map
+        self.goalSubscriber = rospy.Subscriber('move_base_simple/goal', PoseStamped, self.display_goal)
+        self.goalPublisher = rospy.Publisher('goalcell', GridCells, queue_size=1)
  
 
     def handle_a_star(self, req):
@@ -163,6 +168,36 @@ class A_Star:
         point.y = y
 
         return point
+
+    def display_goal(self, msg):
+        """
+        Get pose of goal location from rviz click and paint corresponding cell red
+        :param msg:
+        :return:
+        """
+        header = msg.header
+        header.stamp = rospy.Time.now()
+
+        point = Point()
+        point.x = msg.pose.position.x
+        point.y = msg.pose.position.y
+
+        print("old point: " + str(point))
+
+        point = self.togrid(point)
+
+        print("new point: " + str(point))
+
+        points = []
+        points.append(point)
+
+        goalcell = GridCells()
+        goalcell.header = header
+        goalcell.cell_width = 0.252
+        goalcell.cell_height = 0.252
+        goalcell.cells = points
+
+        self.goalPublisher.publish(goalcell)
 
 
 if __name__ == '__main__':
