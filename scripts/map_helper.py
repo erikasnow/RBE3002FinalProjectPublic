@@ -4,6 +4,8 @@ import rospy
 from nav_msgs.msg import OccupancyGrid, GridCells, Path
 from geometry_msgs.msg import Point, PoseWithCovarianceStamped, PoseStamped, PoseArray, Pose
 
+# my_map is an occupancy grid
+
 
 def get_neighbors(loc, my_map):
     """
@@ -23,7 +25,16 @@ def is_valid_loc(loc, my_map):
 
 def convert_location(loc, my_map):
     """converts points to the grid"""
-   
+    cell_size = my_map.info.resolution
+    x = loc[0]
+    y = loc[1]
+
+    x = x - ((x + (cell_size / 2)) % cell_size) + (cell_size / 2)
+    y = y - ((y + (cell_size / 2)) % cell_size) + (cell_size / 2)
+
+    newloc = (x, y)
+
+    return newloc
 
 def world_to_map(x, y, my_map):
     """
@@ -60,6 +71,7 @@ def to_poses(points, my_map):
 
 def index_to_point(point, my_map):
     """convert a point to a index"""
+
 
 def point_to_index(location, my_map):
     """convert a index to a point"""

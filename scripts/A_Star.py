@@ -13,14 +13,23 @@ class A_Star:
         """
 
         rospy.init_node("a_star")  # start node
-        # for setting initial position on map
+        # for setting initial position on rviz
         self.initSubscriber = rospy.Subscriber('initialpose', PoseWithCovarianceStamped, self.display_start)
         self.initPublisher = rospy.Publisher('initcell', GridCells, queue_size=1)
 
-        # for setting goal position on map
+        # for setting goal position on rviz
         self.goalSubscriber = rospy.Subscriber('move_base_simple/goal', PoseStamped, self.display_goal)
         self.goalPublisher = rospy.Publisher('goalcell', GridCells, queue_size=1)
- 
+
+        # make an occupancy grid for the data
+        self.my_map = None
+        self.mapSubscriber = rospy.Subscriber('map', OccupancyGrid, self.dynamic_map_client)  # is this right?
+
+        # for setting the wavefront on rviz
+        self.wavefrontPublisher = rospy.Publisher('frontier', GridCells, queue_size=10)  # I don't actually know what this should be
+
+        # for setting the path on rviz
+        self.pathPublisher = rospy.Publisher('path', GridCells, queue_size=1)
 
     def handle_a_star(self, req):
 
@@ -32,17 +41,15 @@ class A_Star:
         """
         pass
 
-       
-
-    def dynamic_map_client(self):
+    def dynamic_map_client(self, msg):
 
         """
             Service call to get map and set class variables
             This can be changed to call the expanded map
             :return:
         """
-        pass
-
+        print("grab occupancy grid")
+        self.my_map = msg  # I think I just made a variable with the current map from the map server?
 
     def a_star(self, start, goal):
         """
@@ -103,14 +110,13 @@ class A_Star:
         """
         pass
 
-
     def publish_path(self, points):
         """
             Create a Path() and publishes the cells if Paint is true
             :param points: list of tuples of the path
             :return: Path()
         """
-        pass
+        self.pathPublisher.publish(points)  # pass in dummy data for now
 
     def display_start(self, msg):
         """
@@ -125,10 +131,12 @@ class A_Star:
         point.x = msg.pose.pose.position.x
         point.y = msg.pose.pose.position.y
 
+        loc = (point.x, point.y)
         print("old point: " + str(point))
 
-        point = self.togrid(point)
+        newloc = convert_location(loc, self.my_map)
 
+        point.x, point.y = newloc
         print("new point: " + str(point))
 
         points = []
@@ -136,38 +144,11 @@ class A_Star:
 
         initcell = GridCells()
         initcell.header = header
-        initcell.cell_width = 0.252
-        initcell.cell_height = 0.252
+        initcell.cell_width = self.my_map.info.resolution
+        initcell.cell_height = self.my_map.info.resolution
         initcell.cells = points
 
-        testpoint = Point()
-        testpoints = []
-        testpoints.append(testpoint)
-        testcell = GridCells()
-        testcell.header = header
-        testcell.cell_width = 0.252
-        testcell.cell_height = 0.252
-        testcell.cells = testpoints
-
         self.initPublisher.publish(initcell)
-
-    def togrid(self, point):
-        """
-        Move point from click to center of grid cell
-        :param point:
-        :return: point
-        """
-        cell_size = 0.252
-        x = point.x
-        y = point.y
-
-        x = x - (x % cell_size) + (cell_size / 2)
-        y = y - (y % cell_size) + (cell_size / 2)
-
-        point.x = x
-        point.y = y
-
-        return point
 
     def display_goal(self, msg):
         """
@@ -182,10 +163,12 @@ class A_Star:
         point.x = msg.pose.position.x
         point.y = msg.pose.position.y
 
+        loc = (point.x, point.y)
         print("old point: " + str(point))
 
-        point = self.togrid(point)
+        newloc = convert_location(loc, self.my_map)
 
+        point.x, point.y = newloc
         print("new point: " + str(point))
 
         points = []
@@ -193,8 +176,8 @@ class A_Star:
 
         goalcell = GridCells()
         goalcell.header = header
-        goalcell.cell_width = 0.252
-        goalcell.cell_height = 0.252
+        goalcell.cell_width = self.my_map.info.resolution
+        goalcell.cell_height = self.my_map.info.resolution
         goalcell.cells = points
 
         self.goalPublisher.publish(goalcell)
