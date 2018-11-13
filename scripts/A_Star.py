@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import rospy
 from map_helper import *
+from math import sqrt
+
 
 class A_Star:
 
@@ -69,7 +71,15 @@ class A_Star:
             :param point2: tuple of location
             :return: dist between two points
         """
-    pass
+        x1, y1 = point1
+        x2, y2 = point2
+
+        xdelta = abs(x2 - x1)
+        ydelta = abs(y2 - y1)
+
+        dist = sqrt((xdelta * xdelta) + (ydelta * ydelta))
+
+        return dist
 
     def move_cost(self, current, next):
         """
@@ -187,5 +197,8 @@ if __name__ == '__main__':
     alg = A_Star()
     print("made algorithm")
     rospy.sleep(1)
+    point1 = (0, 0)
+    point2 = (-3, 4)
+    print(alg.euclidean_heuristic(point1, point2))
     rospy.spin()
     pass
