@@ -4,6 +4,7 @@ import rospy
 from nav_msgs.msg import OccupancyGrid, GridCells, Path
 from geometry_msgs.msg import Point, PoseWithCovarianceStamped, PoseStamped, PoseArray, Pose
 
+
 # my_map is an occupancy grid
 
 
@@ -13,9 +14,27 @@ def get_neighbors(loc, my_map):
         :param loc: tuple of location
         :return: list of tuples
     """
-    if (is_valid_loc(loc, my_map)):
+    neighbors = []
 
-  
+    up = (loc[0], loc[1] + 1)
+    down = (loc[0], loc[1] - 1)
+    left = (loc[0] - 1, loc[1])
+    right = (loc[0] + 1, loc[1])
+
+    if is_valid_loc(up, my_map):
+        neighbors.append(up)
+
+    if is_valid_loc(down, my_map):
+        neigbors.append(down)
+
+    if is_valid_loc(left, my_map):
+        neighbors.append(left)
+
+    if is_valid_loc(right, my_map):
+        neighbors.append(right)
+
+    return neighbors
+
 
 def is_valid_loc(loc, my_map):
     """
@@ -23,30 +42,23 @@ def is_valid_loc(loc, my_map):
         :param loc: tuple of location
         :return: boolean is a legal point
     """
-    newloc = convert_location(loc, my_map)
-    maporigin = my_map.info.origin.position
+    x = loc[0]
+    y = loc[1]
 
-    x = newloc[0]
-    y = newloc[1]
+    width = my_map.info.width
+    origin = my_map.info.origin
+    index = point_to_index(loc, my_map)
 
+    xupbnd = width - origin.x
+    xlobnd = -1 * (width - xupbnd)
+    yupbnd = width - origin.y
+    ylobnd = -1 * (width - yupbnd)
 
-
-    xupbnd = my_map.info.width - maporigin.x
-    xlobnd = my_map.info.width - xupbnd
-    yupbnd = my_map.info.height - maporigin.y
-    ylobnd = my_map.info.height - yupbnd
-
-    index = point_to_index(newloc, my_map)
-    free_thres = 50         # arbitrary value, not sure how to implement with given occupancy grid
-    # first test to see if it's within the map
-    if(x >  xupbnd or  x < xlobnd):
+    if (x < xlobnd or x > xupbnd):
         return False
-    elif(y > yupbnd or y < ylobnd):
+    elif (y < ylobnd or y > yupbnd):
         return False
-    # test to determine if the point is within an obstacle or unreachable
-    elif(my_map.data[index] > free_thresh):
-        return False
-    elif(my_map.data == -1): #is Unreachable Case
+    elif (my_map.data[index] == 100 or my_map.data[index] == -1):
         return False
     else:
         return True
@@ -65,6 +77,7 @@ def convert_location(loc, my_map):
 
     return newloc
 
+
 def world_to_map(x, y, my_map):
     """
         converts a point from the world to the map
@@ -72,6 +85,7 @@ def world_to_map(x, y, my_map):
         :param y: float of y position
         :return: tuple of converted point
     """
+
 
 def map_to_world(x, y, my_map):
     """
@@ -98,15 +112,19 @@ def to_poses(points, my_map):
     """
 
 
-def index_to_point(point, my_map):
-    """convert a point to a index"""
+def index_to_point(index, my_map):
+    """convert a index to a point"""
     width = my_map.info.width
-    
+    x = index % width
+    y = (index - x) / width
+    point = (x, y)
+    return point
+
 
 def point_to_index(location, my_map):
-    """convert a index to a point"""
-    x = location[0]
-    y = location[1]
-    width = my_map.info.width
+    """convert a point to a index"""
+    x = int(location[0])
+    y = int(location[1])
+    width = int(my_map.info.width)
     index = x + (y * width)
     return index
