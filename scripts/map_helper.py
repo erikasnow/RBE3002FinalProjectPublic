@@ -3,6 +3,8 @@ import sys
 import rospy
 from nav_msgs.msg import OccupancyGrid, GridCells, Path
 from geometry_msgs.msg import Point, PoseWithCovarianceStamped, PoseStamped, PoseArray, Pose
+from math import *
+import tf
 
 
 # my_map is an occupancy grid
@@ -10,7 +12,7 @@ from geometry_msgs.msg import Point, PoseWithCovarianceStamped, PoseStamped, Pos
 
 def get_neighbors(loc, my_map):
     """
-        returns the legal neighbors of loc
+        returns the legal neighbors of loc for a 4-connected robot
         :param loc: tuple of location
         :return: list of tuples
     """
@@ -87,6 +89,8 @@ def world_to_map(x, y, my_map):
     """
 
 
+
+
 def map_to_world(x, y, my_map):
     """
         converts a point from the map to the world
@@ -94,6 +98,11 @@ def map_to_world(x, y, my_map):
         :param y: float of y position
         :return: tuple of converted point
     """
+    maporigin = my_map.info.origin
+    worldx = x + maporigin.x
+    worldy = y + maporigin.y
+    worldpt = (worldx,worldy)
+    return worldpt
 
 
 def to_cells(points, my_map):
@@ -110,6 +119,27 @@ def to_poses(points, my_map):
         :param points: list of tuples
         :return: GridCell()
     """
+    poses = []
+
+    for p in range(len(points)-1):
+        thispt = points[p]
+        nextpt = points[p+1]
+
+        pt = Pose()
+        pt.position.x = thispt[0]
+        pt.position.y = thispt[1]
+
+        delx = nextpt[0] - thispt[0]
+        dely = nextpt[1] - thispt[1]
+        yaw = atan2(dely,delx)
+        q = tf.transformations.quaternion_from_euler(yaw,0,0,'rzyx')
+        pt.orientation.x = q[0]
+        pt.orientation.y = q[1]
+        pt.orientation.z = q[2]
+        pt.orientation.w = q[3]
+        poses.append(pt)
+
+    return poses
 
 
 def index_to_point(index, my_map):
