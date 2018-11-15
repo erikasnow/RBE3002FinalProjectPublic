@@ -46,17 +46,23 @@ def is_valid_loc(loc, my_map):
         :param loc: tuple of location
         :return: boolean is a legal point
     """
+    loc = convert_location(loc, my_map)
+    print "current location: \n" + str(loc)
     x = loc[0]
     y = loc[1]
 
     width = my_map.info.width
+    print "map width is " + str(width)
     origin = my_map.info.origin.position
     index = point_to_index(loc, my_map)
-
     xupbnd = width - origin.x
+    print "x upper bound: " + str(xupbnd)
     xlobnd = -1 * (width - xupbnd)
+    print "x low bound: " + str(xlobnd)
     yupbnd = width - origin.y
+    print "y upper bound: " + str(yupbnd)
     ylobnd = -1 * (width - yupbnd)
+    print "y low bound: " + str(ylobnd)
 
     if (x < xlobnd or x > xupbnd):
         return False
@@ -71,9 +77,8 @@ def is_valid_loc(loc, my_map):
 def convert_location(loc, my_map):
     """converts points to the grid"""
     cell_size = my_map.info.resolution
-    loc2 = world_to_map(loc, my_map)
-    x = loc2[0]
-    y = loc2[1]
+    x = loc[0]
+    y = loc[1]
 
     x = x - ((x + (cell_size / 2)) % cell_size) + (cell_size / 2)
     y = y - ((y + (cell_size / 2)) % cell_size) + (cell_size / 2)
@@ -95,6 +100,7 @@ def world_to_map(worldpt, my_map):
     mappt = (mapx, mapy)
     return mappt
 
+
 def map_to_world(mappt, my_map):
     """
         converts a point from the map to the world
@@ -114,8 +120,6 @@ def to_cells(points, my_map):
         :param points: list of tuples
         :return: GridCell()
     """
-
-
 
 
 def to_poses(points, my_map):
