@@ -69,8 +69,9 @@ def is_valid_loc(loc, my_map):
 def convert_location(loc, my_map):
     """converts points to the grid"""
     cell_size = my_map.info.resolution
-    x = loc[0]
-    y = loc[1]
+    loc2 = world_to_map(loc[0],loc[1], my_map)
+    x = loc2[0]
+    y = loc2[1]
 
     x = x - ((x + (cell_size / 2)) % cell_size) + (cell_size / 2)
     y = y - ((y + (cell_size / 2)) % cell_size) + (cell_size / 2)
@@ -80,16 +81,18 @@ def convert_location(loc, my_map):
     return newloc
 
 
-def world_to_map(x, y, my_map):
+def world_to_map(worldx, worldy, my_map):
     """
         converts a point from the world to the map
         :param x: float of x position
         :param y: float of y position
         :return: tuple of converted point
     """
-
-
-
+    maporigin = my_map.info.origin
+    mapx = worldx - maporigin.x
+    mapy = worldy - maporigin.y
+    mappt = (mapx, mapy)
+    return mappt
 
 def map_to_world(x, y, my_map):
     """
@@ -101,7 +104,7 @@ def map_to_world(x, y, my_map):
     maporigin = my_map.info.origin
     worldx = x + maporigin.x
     worldy = y + maporigin.y
-    worldpt = (worldx,worldy)
+    worldpt = (worldx, worldy)
     return worldpt
 
 
