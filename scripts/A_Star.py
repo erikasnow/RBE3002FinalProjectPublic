@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 import rospy
 from map_helper import *
-from nav_msgs import Path, PoseStamped
+from nav_msgs.msg import Path
+from geometry_msgs.msg import PoseStamped
 from math import sqrt
-import PriorityQueue
+from PriorityQueue import *
 
 
 class A_Star:
@@ -71,6 +72,7 @@ class A_Star:
         # add the start cell
         frontier.put(start, 0)
         cost_so_far[start] = 0
+        came_from[start] = None
 
         while not frontier.empty():
             current = frontier.get()
@@ -78,22 +80,24 @@ class A_Star:
             if current == goal:
                 break
 
-            for next in get_neighbors(current):
+            #print "get_neighbors returns:\n" + str(get_neighbors(current, self.my_map))
+            for next in get_neighbors(current, self.my_map):
 
                 # find the total cost of going from start to next
-                cost = cost_so_far[current] + move_cost(current, next)
+                cost = cost_so_far[current] + self.move_cost(current, next)
 
                 # if this is the first time exploring next, add it in
                 # or, if we just found a faster way to get to next, update it
                 if next not in cost_so_far or cost < cost_so_far[next]:
                     cost_so_far[next] = cost
-                    priority = cost + euclidean_heuristic(next, goal)
+                    priority = cost + self.euclidean_heuristic(next, goal)
                     frontier.put(next, priority)
                     came_from[next] = current
 
         # create the path by following came_from from goal back to the start
         path = [goal]
         current = goal
+        #print "came_from is:\n" + str(came_from)
         while current is not start:
             current = came_from[current]
             path.append(current)
@@ -179,7 +183,7 @@ class A_Star:
 
             # get the real-world coordinates of the point relative to the
             # origin of the map, from the tuple of grid coordinates A* returns
-            world_x, world_y = map_to_world(point[0], point[1], self.my_map)
+            world_x, world_y = map_to_world(point, self.my_map)
 
             # make a PoseStamped at the real-world coorinates of the point
             # currenlty has the orientation set to the default, to be ignored
@@ -206,12 +210,12 @@ class A_Star:
         point.y = msg.pose.pose.position.y
 
         loc = (point.x, point.y)
-        print("old point: " + str(point))
+        print("old start point:\n" + str(point))
 
         newloc = convert_location(loc, self.my_map)
 
         point.x, point.y = newloc
-        print("new point: " + str(point))
+        print("new start point:\n" + str(point))
 
         points = []
         points.append(point)
@@ -239,12 +243,12 @@ class A_Star:
         point.y = msg.pose.position.y
 
         loc = (point.x, point.y)
-        print("old point: " + str(point))
+        print("old goal point:\n" + str(point))
 
         newloc = convert_location(loc, self.my_map)
 
         point.x, point.y = newloc
-        print("new point: " + str(point))
+        print("new goal point:\n" + str(point))
 
         points = []
         points.append(point)
@@ -259,7 +263,9 @@ class A_Star:
 
         # todo: remove this section after testing:
         goal = newloc
-        self.a_star(start, goal)
+        path = self.a_star(world_to_map(self.start, self.my_map), world_to_map(goal, self.my_map))
+        print "path is:\n" + str(path)
+        self.publish_path(path)
 
 
 if __name__ == '__main__':
