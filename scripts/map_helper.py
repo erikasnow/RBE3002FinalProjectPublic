@@ -50,7 +50,7 @@ def is_valid_loc(loc, my_map):
     y = loc[1]
 
     width = my_map.info.width
-    origin = my_map.info.origin
+    origin = my_map.info.origin.position
     index = point_to_index(loc, my_map)
 
     xupbnd = width - origin.x
@@ -89,7 +89,7 @@ def world_to_map(worldpt, my_map):
         :param worldpt: tuple of point in world
         :return: tuple of converted point
     """
-    maporigin = my_map.info.origin
+    maporigin = my_map.info.origin.position
     mapx = worldpt[0] - maporigin.x
     mapy = worldpt[1] - maporigin.y
     mappt = (mapx, mapy)
@@ -101,7 +101,7 @@ def map_to_world(mappt, my_map):
         :param mappt: tuple of point on mao
         :return: tuple of converted point
     """
-    maporigin = my_map.info.origin
+    maporigin = my_map.info.origin.position
     worldx = mappt[0] + maporigin.x
     worldy = mappt[1] + maporigin.y
     worldpt = (worldx, worldy)
