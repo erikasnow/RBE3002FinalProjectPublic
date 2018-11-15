@@ -47,28 +47,9 @@ def is_valid_loc(loc, my_map):
         :return: boolean is a legal point
     """
     loc = convert_location(loc, my_map)
-    print "current location: \n" + str(loc)
-    x = loc[0]
-    y = loc[1]
-
-    width = my_map.info.width
-    print "map width is " + str(width)
-    origin = my_map.info.origin.position
     index = point_to_index(loc, my_map)
-    xupbnd = width - origin.x
-    print "x upper bound: " + str(xupbnd)
-    xlobnd = -1 * (width - xupbnd)
-    print "x low bound: " + str(xlobnd)
-    yupbnd = width - origin.y
-    print "y upper bound: " + str(yupbnd)
-    ylobnd = -1 * (width - yupbnd)
-    print "y low bound: " + str(ylobnd)
 
-    if (x < xlobnd or x > xupbnd):
-        return False
-    elif (y < ylobnd or y > yupbnd):
-        return False
-    elif (my_map.data[index] == 100 or my_map.data[index] == -1):
+    if (my_map.data[index] == 100 or my_map.data[index] == -1):
         return False
     else:
         return True
