@@ -114,7 +114,7 @@ def to_cells(points, my_map):
         :param points: list of tuples
         :return: GridCell()
     """
-    
+
 
 
 
