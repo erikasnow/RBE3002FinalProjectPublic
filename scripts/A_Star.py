@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 import rospy
 from map_helper import *
-from nav_msgs.msg import Path
+from nav_msgs.msg import Path, GridCells
 from geometry_msgs.msg import PoseStamped
 from math import sqrt
 from PriorityQueue import *
+import std_msgs
 
 
 class A_Star:
@@ -31,6 +32,9 @@ class A_Star:
 
         # for setting the wavefront on rviz
         self.wavefrontPublisher = rospy.Publisher('frontier', GridCells, queue_size=10)  # I don't actually know what this should be
+
+        # for showing the explored cells during A*
+        self.searchedPublisher = rospy.Publisher('explored', GridCells, queue_size=10)
 
         # for setting the path on rviz
         self.pathPublisher = rospy.Publisher('path', Path, queue_size=1)
@@ -80,8 +84,11 @@ class A_Star:
             if current == goal:
                 break
 
+            wavefront = get_neighbors(current, self.my_map)
+            self.paint_cells(wavefront, current)
+
             #print "get_neighbors returns:\n" + str(get_neighbors(current, self.my_map))
-            for next in get_neighbors(current, self.my_map):
+            for next in wavefront:
 
                 # find the total cost of going from start to next
                 cost = cost_so_far[current] + self.move_cost(current, next)
@@ -161,13 +168,50 @@ class A_Star:
         pass
 
     def paint_cells(self, frontier, came_from):
-        # type: (list, list) -> None
+        # type: (list, tuple) -> None
         """
             published cell of A* to Rviz
             :param frontier: tuples of the point on the frontier set
             :param came_from: tuples of the point on the closed set
             :return:
         """
+        for f_cell in frontier:
+            point = Point()
+            points = []
+            loc = convert_location(f_cell, self.my_map)
+            point.x, point.y = loc
+            points.append(point)
+
+            header = std_msgs.msg.Header()
+            header.frame_id = str(0)
+
+            frontier_cell = GridCells()
+            frontier_cell.cells = points
+            frontier_cell.cell_width = self.my_map.info.resolution
+            frontier_cell.cell_height = self.my_map.info.resolution
+            header.stamp = rospy.Time.now()
+            frontier_cell.header = header
+
+            self.wavefrontPublisher.publish(frontier_cell)
+
+
+        point = Point()
+        points = []
+        loc = convert_location(came_from, self.my_map)
+        point.x, point.y = loc
+        points.append(point)
+
+        header = std_msgs.msg.Header()
+        header.frame_id = str(0)
+
+        searched_cell = GridCells()
+        searched_cell.cells = points
+        searched_cell.cell_width = self.my_map.info.resolution
+        searched_cell.cell_height = self.my_map.info.resolution
+        header.stamp = rospy.Time.now()
+        searched_cell.header = header
+
+        self.searchedPublisher.publish(searched_cell)
         pass
 
     def publish_path(self, points):
@@ -203,6 +247,7 @@ class A_Star:
         :return:
         """
         header = msg.header
+        print("msg.header.seq = " + str(msg.header.seq))
         header.stamp = rospy.Time.now()
 
         point = Point()
@@ -236,6 +281,7 @@ class A_Star:
         :return:
         """
         header = msg.header
+        print("msg.header.seq = " + str(msg.header.seq))
         header.stamp = rospy.Time.now()
 
         point = Point()
