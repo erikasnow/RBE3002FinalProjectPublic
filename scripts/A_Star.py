@@ -2,7 +2,7 @@
 import rospy
 from map_helper import *
 from nav_msgs.msg import Path, GridCells
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Point
 from math import sqrt
 from PriorityQueue import *
 import std_msgs
@@ -37,7 +37,8 @@ class A_Star:
         self.searchedPublisher = rospy.Publisher('explored', GridCells, queue_size=10)
 
         # for setting the path on rviz
-        self.pathPublisher = rospy.Publisher('path', Path, queue_size=1)
+        #self.pathPublisher = rospy.Publisher('path', Path, queue_size=1)
+        self.pathPublisher = rospy.Publisher('path', GridCells, queue_size=10)
 
         start = (0,0) # variable to store the start cell todo: remove after testing
 
@@ -212,7 +213,6 @@ class A_Star:
         searched_cell.header = header
 
         self.searchedPublisher.publish(searched_cell)
-        pass
 
     def publish_path(self, points):
         """
@@ -238,7 +238,16 @@ class A_Star:
             # append the new pose to the list of poses that make up the path
             path.poses.append(pose)
 
-        self.pathPublisher.publish(path)
+        path_cells = []
+        grid = GridCells()
+
+        # copy all the poses in the path into Points for the GridCells message
+        for pose in path.poses:
+            cell_loc = pose.pose.position
+            path_cells.append(cell_loc)
+
+        grid.cells = path_cells
+        self.pathPublisher.publish(grid)
 
     def display_start(self, msg):
         """
@@ -309,6 +318,7 @@ class A_Star:
 
         # todo: remove this section after testing:
         goal = newloc
+        print "processing path"
         path = self.a_star(world_to_map(self.start, self.my_map), world_to_map(goal, self.my_map))
         print "path is:\n" + str(path)
         self.publish_path(path)
