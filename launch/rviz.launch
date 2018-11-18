@@ -1,0 +1,9 @@
+<launch>
+
+  <node name="map" pkg="map_server" type="map_server" args="$(find lab3)/RBE3002Code02/maps/simple_map.yaml"/> 
+
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find lab3)/RBE3002Code02/config/erikas_trying.rviz"/>
+
+  <node name="map_frame_transform" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 /odom /map 100"/>
+
+</launch>

@@ -37,8 +37,8 @@ class A_Star:
         self.searchedPublisher = rospy.Publisher('explored', GridCells, queue_size=10)
 
         # for setting the path on rviz
-        #self.pathPublisher = rospy.Publisher('path', Path, queue_size=1)
-        self.pathPublisher = rospy.Publisher('path', GridCells, queue_size=10)
+        self.pathPublisher = rospy.Publisher('path', Path, queue_size=1)
+        #self.pathPublisher = rospy.Publisher('path', GridCells, queue_size=1)
 
         start = (0,0) # variable to store the start cell todo: remove after testing
 
@@ -221,6 +221,7 @@ class A_Star:
             :return:
         """
         path = Path()
+        path.header.frame_id = 'map'
 
         # copy all the points as PoseStamped() into the path
         for point in points:
@@ -238,16 +239,18 @@ class A_Star:
             # append the new pose to the list of poses that make up the path
             path.poses.append(pose)
 
-        path_cells = []
-        grid = GridCells()
+        self.pathPublisher.publish(path)
 
-        # copy all the poses in the path into Points for the GridCells message
-        for pose in path.poses:
-            cell_loc = pose.pose.position
-            path_cells.append(cell_loc)
-
-        grid.cells = path_cells
-        self.pathPublisher.publish(grid)
+#        path_cells = []
+#        grid = GridCells()
+#
+#        # copy all the poses in the path into Points for the GridCells message
+#        for pose in path.poses:
+#            cell_loc = pose.pose.position
+#            path_cells.append(cell_loc)
+#
+#        grid.cells = path_cells
+#        self.pathPublisher.publish(grid)
 
     def display_start(self, msg):
         """
