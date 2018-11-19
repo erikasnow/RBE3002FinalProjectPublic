@@ -30,11 +30,11 @@ class A_Star:
         self.my_map = None
         self.mapSubscriber = rospy.Subscriber('map', OccupancyGrid, self.dynamic_map_client)  # is this right?
 
-        # for setting the wavefront on rviz
-        self.wavefrontPublisher = rospy.Publisher('frontier', GridCells, queue_size=10)  # I don't actually know what this should be
+        # for setting the frontier on rviz
+        self.frontierPublisher = rospy.Publisher('frontier', GridCells, queue_size=1)
 
         # for showing the explored cells during A*
-        self.searchedPublisher = rospy.Publisher('explored', GridCells, queue_size=10)
+        self.exploredPublisher = rospy.Publisher('explored', GridCells, queue_size=1)
 
         # for setting the path on rviz
         self.pathPublisher = rospy.Publisher('path', Path, queue_size=1)
@@ -86,10 +86,14 @@ class A_Star:
                 break
 
             wavefront = get_neighbors(current, self.my_map)
-            self.paint_cells(wavefront, current)
+            #self.paint_cells(wavefront, current)
 
             #print "get_neighbors returns:\n" + str(get_neighbors(current, self.my_map))
             for next in wavefront:
+
+                # publish the frontier and explored cells to rviz for debugging
+                self.paint_frontier(frontier)
+                self.paint_explored(came_from)
 
                 # find the total cost of going from start to next
                 cost = cost_so_far[current] + self.move_cost(current, next)
@@ -167,6 +171,52 @@ class A_Star:
             :return: reduced list of tuples
         """
         pass
+
+    def paint_frontier(self, frontier):
+        """
+            finds the frontier cells from A*'s "came_from"
+            dictionary and paints it to rviz for debugging
+            :param came_from: came_from dictionary used by A*
+            :return:
+        """
+        frontier_elements = map(lambda foo: foo[1], frontier.elements)
+
+        frontier_cells = GridCells()
+        frontier_cells.cell_width = self.my_map.info.resolution
+        frontier_cells.cell_height = self.my_map.info.resolution
+        frontier_cells.header.frame_id = 'map'
+        frontier_cells.header.stamp = rospy.Time.now()
+
+        for cell in frontier_elements:
+            cell_as_point = Point()
+            cell_as_point.x = map_to_world(cell, self.my_map)[0]
+            cell_as_point.y = map_to_world(cell, self.my_map)[1]
+            frontier_cells.cells.append(cell_as_point)
+
+        self.frontierPublisher.publish(frontier_cells)
+
+
+    def paint_explored(self, came_from):
+        """
+            finds the explored cells from A*'s "came_from"
+            dictionary and paints it to rviz for debugging
+            :param came_from: came_from dictionary used by A*
+            :return:
+        """
+        explored_cells = GridCells()
+        explored_cells.cell_width = self.my_map.info.resolution
+        explored_cells.cell_height = self.my_map.info.resolution
+        explored_cells.header.frame_id = 'map'
+        explored_cells.header.stamp = rospy.Time.now()
+
+        for cell in came_from:
+            cell_as_point = Point()
+            cell_as_point.x = map_to_world(cell, self.my_map)[0]
+            cell_as_point.y = map_to_world(cell, self.my_map)[1]
+            explored_cells.cells.append(cell_as_point)
+
+        self.exploredPublisher.publish(explored_cells)
+
 
     def paint_cells(self, frontier, came_from):
         # type: (list, tuple) -> None
