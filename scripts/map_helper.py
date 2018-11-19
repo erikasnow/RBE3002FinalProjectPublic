@@ -160,9 +160,6 @@ def index_to_point(index, my_map):
 
 def point_to_index(location, my_map):
     """convert a point to a index"""
-    #x = int(location[0])  # these are wrong
-    #y = int(location[1])
-
     x = int(location[0]/my_map.info.resolution)  # I think this is closer
     y = int(location[1]/my_map.info.resolution)
 

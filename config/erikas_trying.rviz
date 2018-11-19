@@ -13,7 +13,6 @@ Panels:
         - /InitCell1
         - /GoalCell1
         - /Frontier1
-        - /Unexplored1
         - /Explored1
       Splitter Ratio: 0.5
     Tree Height: 236
@@ -128,13 +127,6 @@ Visualization Manager:
     - Alpha: 1
       Class: rviz/GridCells
       Color: 103; 103; 103
-      Enabled: true
-      Name: Unexplored
-      Topic: /unexplored
-      Value: true
-    - Alpha: 1
-      Class: rviz/GridCells
-      Color: 25; 255; 0
       Enabled: true
       Name: Explored
       Topic: /explored
