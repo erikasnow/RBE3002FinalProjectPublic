@@ -160,8 +160,15 @@ def index_to_point(index, my_map):
 
 def point_to_index(location, my_map):
     """convert a point to a index"""
-    x = int(location[0]/my_map.info.resolution)  # I think this is closer
-    y = int(location[1]/my_map.info.resolution)
+
+    cell_size = my_map.info.resolution
+
+    # round the values to be evenly divisible by cell_size
+    x = location[0] - location[0] % cell_size
+    y = location[1] - location[1] % cell_size
+
+    x = int(x/cell_size)
+    y = int(y/cell_size)
 
     width = int(my_map.info.width)
 
