@@ -31,17 +31,25 @@ def get_neighbors(loc, my_map):
     #print "left: " + str(is_valid_loc(left, my_map))
     #print "right: " + str(is_valid_loc(right, my_map))
 
+    print("location: " + str(loc))
+
+    print("up: ")
     if is_valid_loc(up, my_map):
         neighbors.append(up)
 
+    print("down: ")
     if is_valid_loc(down, my_map):
         neighbors.append(down)
 
+    print("left: ")
     if is_valid_loc(left, my_map):
         neighbors.append(left)
 
+    print("right: ")
     if is_valid_loc(right, my_map):
         neighbors.append(right)
+
+    #print("neighbors: " + str(neighbors))
 
     return neighbors
 
@@ -56,8 +64,10 @@ def is_valid_loc(loc, my_map):
     index = point_to_index(loc, my_map)
 
     if (my_map.data[index] == 100 or my_map.data[index] == -1):
+        print("FALSE -- loc: " + str(loc) + " index: " + str(index) + " value: " + str(my_map.data[index]))
         return False
     else:
+        print("TRUE -- loc: " + str(loc) + " index: " + str(index) + " value: " + str(my_map.data[index]))
         return True
 
 
@@ -150,8 +160,13 @@ def index_to_point(index, my_map):
 
 def point_to_index(location, my_map):
     """convert a point to a index"""
-    x = int(location[0])
-    y = int(location[1])
+    #x = int(location[0])  # these are wrong
+    #y = int(location[1])
+
+    x = int(location[0]/my_map.info.resolution)  # I think this is closer
+    y = int(location[1]/my_map.info.resolution)
+
     width = int(my_map.info.width)
+
     index = x + (y * width)
     return index
