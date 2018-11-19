@@ -4,6 +4,6 @@
 
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find lab3)/RBE3002Code02/config/erikas_trying.rviz"/>
 
-  <node name="astar" pkg="lab3" type="A_Star.py"/>
+  <node name="map_frame_transform" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 /odom /map 100"/>
 
 </launch>
