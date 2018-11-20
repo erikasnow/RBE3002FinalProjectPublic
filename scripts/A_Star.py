@@ -9,6 +9,7 @@ from PriorityQueue import *
 import std_msgs
 #from Astar.srv import *
 
+
 class A_Star:
 
     def __init__(self):
@@ -26,7 +27,6 @@ class A_Star:
         # publish the frontier and explored cells while running A*
         self.frontierPublisher = rospy.Publisher('frontier', GridCells, queue_size=1)
         self.exploredPublisher = rospy.Publisher('explored', GridCells, queue_size=1)
-
 
     def handle_astar(self, req):
         """
@@ -47,8 +47,8 @@ class A_Star:
 
         path_cells = self.a_star(start, goal)
         path = create_path(path_cells)
-        return AstarResponse(path)
 
+        return AstarResponse(path)
 
     def dynamic_map_client(self, msg):
         """
@@ -57,7 +57,6 @@ class A_Star:
             :return:
         """
         self.my_map = msg
-
 
     def a_star(self, start, goal):
         """
@@ -84,9 +83,7 @@ class A_Star:
                 break
 
             wavefront = get_neighbors(current, self.my_map)
-            #self.paint_cells(wavefront, current)
 
-            #print "get_neighbors returns:\n" + str(get_neighbors(current, self.my_map))
             for next in wavefront:
 
                 # publish the frontier and explored cells to rviz for debugging
@@ -107,22 +104,22 @@ class A_Star:
         # create the path by following came_from from goal back to the start
         path = [goal]
         current = goal
-        #print "came_from is:\n" + str(came_from)
+
         while current is not start:
             current = came_from[current]
             path.append(current)
 
-        path.reverse() # reverse the path to put it in the right order
+        # reverse the path to put it in the right order
+        path.reverse()
 
         return path
-
 
     def euclidean_heuristic(self, point1, point2):
         """
             calculate the dist between two points
             :param point1: tuple of location
             :param point2: tuple of location
-            :return: dist between two points
+            :return: Euclidean distance between two points
         """
         x1, y1 = point1
         x2, y2 = point2
@@ -134,12 +131,11 @@ class A_Star:
 
         return dist
 
-
     def move_cost(self, point1, point2):
         """
             calculate the Manhattan distance between two points
-            :param current: tuple of location
-            :param next: tuple of location
+            :param point1: tuple of location
+            :param point2: tuple of location
             :return: Manhattan distance between two points
         """
         x1, y1 = point1
@@ -149,8 +145,8 @@ class A_Star:
         ydelta = abs(y2 - y1)
 
         dist = xdelta + ydelta
-        return dist
 
+        return dist
 
     def optimize_path(self, path):
         """
@@ -159,7 +155,6 @@ class A_Star:
             :return: reduced list of tuples
         """
         pass
-
 
     def paint_frontier(self, frontier):
         """
@@ -183,7 +178,6 @@ class A_Star:
 
         self.frontierPublisher.publish(frontier_cells)
 
-
     def paint_explored(self, came_from):
         """
             finds the explored cells from A*'s "came_from"
@@ -205,7 +199,6 @@ class A_Star:
 
         self.exploredPublisher.publish(explored_cells)
 
-
     def create_path(self, points):
         """
             Publishes a Path() containing the waypoints along the path
@@ -222,8 +215,8 @@ class A_Star:
             # origin of the map, from the tuple of grid coordinates A* returns
             world_x, world_y = map_to_world(point, self.my_map)
 
-            # make a PoseStamped at the real-world coorinates of the point
-            # currenlty has the orientation set to the default, to be ignored
+            # make a PoseStamped at the real-world coordinates of the point
+            # currently has the orientation set to the default, to be ignored
             pose = PoseStamped()
             pose.pose.position.x = world_x
             pose.pose.position.y = world_y
@@ -232,7 +225,6 @@ class A_Star:
             path.poses.append(pose)
 
         return path
-        #self.pathPublisher.publish(path)
 
 
 if __name__ == '__main__':

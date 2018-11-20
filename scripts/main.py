@@ -5,6 +5,7 @@ from map_helper import *
 from nav_msgs.srv import GetPlan
 #from Astar.srv import *
 
+
 def process_pose_message(msg, x_position, y_position):
     """
         processes a start or end
@@ -36,10 +37,12 @@ def process_pose_message(msg, x_position, y_position):
 
     return gridcells
 
+
 #def format_plan(start_loc, goal_loc)
 #    get_plan = GetPlanRequest()
 #    
 #    start.pose.position
+
 
 def handle_start_pose(msg):
     """
@@ -111,16 +114,20 @@ if __name__ == '__main__':
     # occupancy grid for the map data
     my_map = None
     mapSubscriber = rospy.Subscriber('map', OccupancyGrid, handle_map_updates)
+
     # subscribe to rviz start and goal cells
     start_pose_subscriber = rospy.Subscriber('initialpose', PoseWithCovarianceStamped, handle_start_pose)
     goal_subscriber = rospy.Subscriber('move_base_simple/goal', PoseStamped, handle_goal)
+
     # publish start and goal cells
     initPublisher = rospy.Publisher('initcell', GridCells, queue_size=1)
     goalPublisher = rospy.Publisher('goalcell', GridCells, queue_size=1)
+
     # publish the optimal path
     pathPublisher = rospy.Publisher('path', Path, queue_size=1)
 
     print "waiting for A* service"
     rospy.wait_for_service('astar')
     print "main sees A* service"
+
     rospy.spin()
