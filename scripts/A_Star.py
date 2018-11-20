@@ -2,65 +2,62 @@
 import rospy
 from map_helper import *
 from nav_msgs.msg import Path, GridCells
+from nav_msgs.srv import GetPlan
 from geometry_msgs.msg import PoseStamped, Point
 from math import sqrt
 from PriorityQueue import *
 import std_msgs
-
+#from Astar.srv import *
 
 class A_Star:
 
     def __init__(self):
         """
-            This node handles A* path requests
-            It is accessed using a service call. It can the publish grid cells
-            to show the frontier, closed and path.
+            This node runs a service for A* path requests between two
+            grid locations. It publishes the frontier and explored cells
+            while running the A* algorithm for visualization and debugging.
         """
+        rospy.init_node("a_star")
 
-        rospy.init_node("a_star")  # start node
-        # for setting initial position on rviz
-        self.initSubscriber = rospy.Subscriber('initialpose', PoseWithCovarianceStamped, self.display_start)
-        self.initPublisher = rospy.Publisher('initcell', GridCells, queue_size=1)
-
-        # for setting goal position on rviz
-        self.goalSubscriber = rospy.Subscriber('move_base_simple/goal', PoseStamped, self.display_goal)
-        self.goalPublisher = rospy.Publisher('goalcell', GridCells, queue_size=1)
-
-        # make an occupancy grid for the data
+        # occupancy grid for the data
         self.my_map = None
-        self.mapSubscriber = rospy.Subscriber('map', OccupancyGrid, self.dynamic_map_client)  # is this right?
+        self.mapSubscriber = rospy.Subscriber('map', OccupancyGrid, self.dynamic_map_client)
 
-        # for setting the frontier on rviz
+        # publish the frontier and explored cells while running A*
         self.frontierPublisher = rospy.Publisher('frontier', GridCells, queue_size=1)
-
-        # for showing the explored cells during A*
         self.exploredPublisher = rospy.Publisher('explored', GridCells, queue_size=1)
 
-        # for setting the path on rviz
-        self.pathPublisher = rospy.Publisher('path', Path, queue_size=1)
-        #self.pathPublisher = rospy.Publisher('path', GridCells, queue_size=1)
 
-        start = (0,0) # variable to store the start cell todo: remove after testing
-
-    def handle_a_star(self, req):
-
+    def handle_astar(self, req):
         """
             service call that uses A* to create a path.
             This can be altered to also grab the orentation for better heuristic
-            :param req: GetPlan
-            :return: Path()
+            :param req: GetPlan() with start and goal data
+            :return: GetPlan() with a Path()
         """
-        pass
+        start_x = req.start.pose.position.x
+        start_y = req.start.pose.position.y
+        goal_x = req.goal.pose.position.x
+        goal_y = req.goal.pose.position.y
+
+        world_start = (start_x, start_y)
+        world_goal = (goal_x, goal_y)
+        start = world_to_map(world_start, self.my_map)
+        goal = world_to_map(world_goal, self.my_map)
+
+        path_cells = self.a_star(start, goal)
+        path = create_path(path_cells)
+        return AstarResponse(path)
+
 
     def dynamic_map_client(self, msg):
-
         """
-            Service call to get map and set class variables
-            This can be changed to call the expanded map
+            Updates my_map with data from the map topic
+            :param msg: OccupancyGrid from the map topic
             :return:
         """
-        print("grab occupancy grid")
-        self.my_map = msg  # I think I just made a variable with the current map from the map server?
+        self.my_map = msg
+
 
     def a_star(self, start, goal):
         """
@@ -69,6 +66,7 @@ class A_Star:
             :param goal: tuple of goal pose
             :return: list of tuples along the optimal path
         """
+        print "processing path"
 
         frontier = PriorityQueue()
         came_from = {}
@@ -136,6 +134,7 @@ class A_Star:
 
         return dist
 
+
     def move_cost(self, point1, point2):
         """
             calculate the Manhattan distance between two points
@@ -153,30 +152,19 @@ class A_Star:
         return dist
 
 
-#    def reconstruct_path(self, start, goal, came_from):
-#        """
-#            Rebuild the path from a dictionary
-#            :param start: starting key
-#            :param goal: starting value
-#            :param came_from: dictionary of tuples
-#            :return: list of tuples
-#        """
-#        pass
-
-
     def optimize_path(self, path):
         """
-            remove redundant points in hte path
+            remove redundant points in the path
             :param path: list of tuples
             :return: reduced list of tuples
         """
         pass
 
+
     def paint_frontier(self, frontier):
         """
-            finds the frontier cells from A*'s "came_from"
-            dictionary and paints it to rviz for debugging
-            :param came_from: came_from dictionary used by A*
+            Paints the A* frontier cells to rviz for debugging
+            :param frontier: dictionary storing the frontier cells
             :return:
         """
         frontier_elements = map(lambda foo: foo[1], frontier.elements)
@@ -218,53 +206,7 @@ class A_Star:
         self.exploredPublisher.publish(explored_cells)
 
 
-    def paint_cells(self, frontier, came_from):
-        # type: (list, tuple) -> None
-        """
-            published cell of A* to Rviz
-            :param frontier: tuples of the point on the frontier set
-            :param came_from: tuples of the point on the closed set
-            :return:
-        """
-        for f_cell in frontier:
-            point = Point()
-            points = []
-            loc = convert_location(f_cell, self.my_map)
-            point.x, point.y = loc
-            points.append(point)
-
-            header = std_msgs.msg.Header()
-            header.frame_id = str(0)
-
-            frontier_cell = GridCells()
-            frontier_cell.cells = points
-            frontier_cell.cell_width = self.my_map.info.resolution
-            frontier_cell.cell_height = self.my_map.info.resolution
-            header.stamp = rospy.Time.now()
-            frontier_cell.header = header
-
-            self.wavefrontPublisher.publish(frontier_cell)
-
-
-        point = Point()
-        points = []
-        loc = convert_location(came_from, self.my_map)
-        point.x, point.y = loc
-        points.append(point)
-
-        header = std_msgs.msg.Header()
-        header.frame_id = str(0)
-
-        searched_cell = GridCells()
-        searched_cell.cells = points
-        searched_cell.cell_width = self.my_map.info.resolution
-        searched_cell.cell_height = self.my_map.info.resolution
-        header.stamp = rospy.Time.now()
-        searched_cell.header = header
-
-        self.searchedPublisher.publish(searched_cell)
-
-    def publish_path(self, points):
+    def create_path(self, points):
         """
             Publishes a Path() containing the waypoints along the path
             :param points: list of tuples of the path
@@ -289,100 +231,12 @@ class A_Star:
             # append the new pose to the list of poses that make up the path
             path.poses.append(pose)
 
-        self.pathPublisher.publish(path)
-
-#        path_cells = []
-#        grid = GridCells()
-#
-#        # copy all the poses in the path into Points for the GridCells message
-#        for pose in path.poses:
-#            cell_loc = pose.pose.position
-#            path_cells.append(cell_loc)
-#
-#        grid.cells = path_cells
-#        self.pathPublisher.publish(grid)
-
-    def display_start(self, msg):
-        """
-        Get pose of initial location from rviz click and paint corresponding cell blue
-        :param msg:
-        :return:
-        """
-        header = msg.header
-        print("msg.header.seq = " + str(msg.header.seq))
-        header.stamp = rospy.Time.now()
-
-        point = Point()
-        point.x = msg.pose.pose.position.x
-        point.y = msg.pose.pose.position.y
-
-        loc = (point.x, point.y)
-        print("old start point:\n" + str(point))
-
-        newloc = convert_location(loc, self.my_map)
-
-        point.x, point.y = newloc
-        print("new start point:\n" + str(point))
-
-        points = []
-        points.append(point)
-
-        initcell = GridCells()
-        initcell.header = header
-        initcell.cell_width = self.my_map.info.resolution
-        initcell.cell_height = self.my_map.info.resolution
-        initcell.cells = points
-
-        self.start = newloc # todo: remove this after testing
-        self.initPublisher.publish(initcell)
-
-    def display_goal(self, msg):
-        """
-        Get pose of goal location from rviz click and paint corresponding cell red
-        :param msg:
-        :return:
-        """
-        header = msg.header
-        print("msg.header.seq = " + str(msg.header.seq))
-        header.stamp = rospy.Time.now()
-
-        point = Point()
-        point.x = msg.pose.position.x
-        point.y = msg.pose.position.y
-
-        loc = (point.x, point.y)
-        print("old goal point:\n" + str(point))
-
-        newloc = convert_location(loc, self.my_map)
-
-        point.x, point.y = newloc
-        print("new goal point:\n" + str(point))
-
-        points = []
-        points.append(point)
-
-        goalcell = GridCells()
-        goalcell.header = header
-        goalcell.cell_width = self.my_map.info.resolution
-        goalcell.cell_height = self.my_map.info.resolution
-        goalcell.cells = points
-
-        self.goalPublisher.publish(goalcell)
-
-        # todo: remove this section after testing:
-        goal = newloc
-        print "processing path"
-        path = self.a_star(world_to_map(self.start, self.my_map), world_to_map(goal, self.my_map))
-        print "path is:\n" + str(path)
-        self.publish_path(path)
+        return path
+        #self.pathPublisher.publish(path)
 
 
 if __name__ == '__main__':
     alg = A_Star()
-    print("made algorithm")
-    rospy.sleep(1)
-    #point1 = (0, 0)
-    #point2 = (-3, 4)
-    #print(alg.euclidean_heuristic(point1, point2))
+    s = rospy.Service('astar', GetPlan, alg.handle_astar)
+    print "A* service is running"
     rospy.spin()
-    pass

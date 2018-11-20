@@ -2,7 +2,8 @@
 import rospy
 import sys
 from map_helper import *
-#from astar.srv import *
+from nav_msgs.srv import GetPlan
+#from Astar.srv import *
 
 def process_pose_message(msg, x_position, y_position):
     """
@@ -20,6 +21,8 @@ def process_pose_message(msg, x_position, y_position):
 
     world_loc = (point.x, point.y)
     grid_loc = convert_location(world_loc, my_map)
+#    grid_loc = world_to_map(world_loc, my_map)
+#    centered_grid_loc = convert_location(grid_loc, my_map)
     point.x, point.y = grid_loc
 
     points = []
@@ -31,23 +34,67 @@ def process_pose_message(msg, x_position, y_position):
     gridcells.cell_height = my_map.info.resolution
     gridcells.cells = points
 
-    return grid_loc, gridcells
+    return gridcells
+
+#def format_plan(start_loc, goal_loc)
+#    get_plan = GetPlanRequest()
+#    
+#    start.pose.position
 
 def handle_start_pose(msg):
+    """
+        Get pose of start from rviz, and paint that cell
+        :param msg:
+        :return:
+    """
     x_position = msg.pose.pose.position.x
     y_position = msg.pose.pose.position.y
 
-    global start_loc
-    start_loc, initcell = process_pose_message(msg, x_position, y_position)
+    #start_loc = (0,0) #todo: delete this after rewriting process_pose_message
+    initcell = process_pose_message(msg, x_position, y_position)
+#        start_loc, initcell = process_pose_message(msg, x_position, y_position)
     initPublisher.publish(initcell)
 
+    # copy the message data into start_pose
+    global start_pose
+    start_pose.header = msg.header
+    start_pose.pose = msg.pose.pose
+
+#    # create a PoseStamped with the same data as the
+#    # PoseWithCovarianceStamped from the rviz message
+#    start_pose_stamped = PoseStamped()
+#    start_pose_stamped.header = msg.header
+#    start_pose_stamped.pose = msg.pose.pose
+#    
+#    global start_pose
+#    start_pose = start_pose_stamped
+
+
 def handle_goal(msg):
+    """
+        Get pose of goal from rviz, paint that cell, and run A*
+        :param msg:
+        :return:
+    """
+    goal_pose = msg
     x_position = msg.pose.position.x
     y_position = msg.pose.position.y
 
-    goal_loc, goalcell = process_pose_message(msg, x_position, y_position)
+    goalcell = process_pose_message(msg, x_position, y_position)
+#        goal_loc, goalcell = process_pose_message(msg, x_position, y_position)
     goalPublisher.publish(goalcell)
-    # todo: call A* here with start_loc and goal_loc
+
+    try:
+        astar_service = rospy.ServiceProxy('astar', GetPlan)
+        get_plan = GetPlan()
+        get_plan.start = start_pose
+        get_plan.goal = goal_pose
+        #path = astar_service(get_plan)
+        path = astar_service(start_pose, goal_pose, 0.1)
+        pathPublisher.publish(path)
+    except rospy.ServiceException, e:
+        print "\nA* service call failed:\n" + str(e)
+
 
 def handle_map_updates(msg):
     global my_map
@@ -58,7 +105,8 @@ if __name__ == '__main__':
 
     rospy.init_node("main")
 
-    start_loc = (0, 0)
+    #start_loc = (0, 0)
+    start_pose = PoseStamped()
 
     # occupancy grid for the map data
     my_map = None
@@ -69,5 +117,10 @@ if __name__ == '__main__':
     # publish start and goal cells
     initPublisher = rospy.Publisher('initcell', GridCells, queue_size=1)
     goalPublisher = rospy.Publisher('goalcell', GridCells, queue_size=1)
+    # publish the optimal path
+    pathPublisher = rospy.Publisher('path', Path, queue_size=1)
 
+    print "waiting for A* service"
+    rospy.wait_for_service('astar')
+    print "main sees A* service"
     rospy.spin()
