@@ -165,5 +165,5 @@ def point_to_index(location, my_map):
     width = int(my_map.info.width)
 
     index = x + (y * width)
-    
+
     return index
