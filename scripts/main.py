@@ -35,7 +35,7 @@ def process_pose_message(msg, x_position, y_position):
     gridcells.cell_height = my_map.info.resolution
     gridcells.cells = points
 
-    return gridcells
+    return grid_loc, gridcells
 
 
 #def format_plan(start_loc, goal_loc)
@@ -54,14 +54,15 @@ def handle_start_pose(msg):
     y_position = msg.pose.pose.position.y
 
     #start_loc = (0,0) #todo: delete this after rewriting process_pose_message
-    initcell = process_pose_message(msg, x_position, y_position)
-#        start_loc, initcell = process_pose_message(msg, x_position, y_position)
+    #initcell = process_pose_message(msg, x_position, y_position)
+    start_loc, initcell = process_pose_message(msg, x_position, y_position)
     initPublisher.publish(initcell)
 
     # copy the message data into start_pose
     global start_pose
     start_pose.header = msg.header
-    start_pose.pose = msg.pose.pose
+    start_pose.pose.position.x = start_loc[0]
+    start_pose.pose.position.y = start_loc[1]
 
 #    # create a PoseStamped with the same data as the
 #    # PoseWithCovarianceStamped from the rviz message
@@ -83,8 +84,8 @@ def handle_goal(msg):
     x_position = msg.pose.position.x
     y_position = msg.pose.position.y
 
-    goalcell = process_pose_message(msg, x_position, y_position)
-#        goal_loc, goalcell = process_pose_message(msg, x_position, y_position)
+    #goalcell = process_pose_message(msg, x_position, y_position)
+    goal_loc, goalcell = process_pose_message(msg, x_position, y_position)
     goalPublisher.publish(goalcell)
 
     try:
