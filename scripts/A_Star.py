@@ -28,7 +28,7 @@ class A_Star:
 
         # make an occupancy grid for the data
         self.my_map = None
-        self.mapSubscriber = rospy.Subscriber('map', OccupancyGrid, self.dynamic_map_client)  # is this right?
+        self.mapSubscriber = rospy.Subscriber('map', OccupancyGrid, self.dynamic_map_client)
 
         # for setting the frontier on rviz
         self.frontierPublisher = rospy.Publisher('frontier', GridCells, queue_size=1)
@@ -38,9 +38,10 @@ class A_Star:
 
         # for setting the path on rviz
         self.pathPublisher = rospy.Publisher('path', Path, queue_size=1)
-        #self.pathPublisher = rospy.Publisher('path', GridCells, queue_size=1)
 
         start = (0,0) # variable to store the start cell todo: remove after testing
+        self.goalCell = GridCells()  # this way we can repaint them for clarity in rviz
+        self.initCell = GridCells()
 
     def handle_a_star(self, req):
 
@@ -118,7 +119,6 @@ class A_Star:
 
         return path
 
-
     def euclidean_heuristic(self, point1, point2):
         """
             calculate the dist between two points
@@ -163,7 +163,6 @@ class A_Star:
 #        """
 #        pass
 
-
     def optimize_path(self, path):
         """
             remove redundant points in hte path
@@ -195,7 +194,6 @@ class A_Star:
 
         self.frontierPublisher.publish(frontier_cells)
 
-
     def paint_explored(self, came_from):
         """
             finds the explored cells from A*'s "came_from"
@@ -216,7 +214,6 @@ class A_Star:
             explored_cells.cells.append(cell_as_point)
 
         self.exploredPublisher.publish(explored_cells)
-
 
     def paint_cells(self, frontier, came_from):
         # type: (list, tuple) -> None
@@ -244,7 +241,6 @@ class A_Star:
             frontier_cell.header = header
 
             self.wavefrontPublisher.publish(frontier_cell)
-
 
         point = Point()
         points = []
@@ -280,8 +276,8 @@ class A_Star:
             # origin of the map, from the tuple of grid coordinates A* returns
             world_x, world_y = map_to_world(point, self.my_map)
 
-            # make a PoseStamped at the real-world coorinates of the point
-            # currenlty has the orientation set to the default, to be ignored
+            # make a PoseStamped at the real-world coordinates of the point
+            # currently has the orientation set to the default, to be ignored
             pose = PoseStamped()
             pose.pose.position.x = world_x
             pose.pose.position.y = world_y
@@ -333,8 +329,9 @@ class A_Star:
         initcell.cell_height = self.my_map.info.resolution
         initcell.cells = points
 
-        self.start = newloc # todo: remove this after testing
+        self.start = newloc  # TODO: remove this after testing
         self.initPublisher.publish(initcell)
+        self.initCell = initcell
 
     def display_goal(self, msg):
         """
@@ -368,6 +365,7 @@ class A_Star:
         goalcell.cells = points
 
         self.goalPublisher.publish(goalcell)
+        self.goalCell = goalcell
 
         # todo: remove this section after testing:
         goal = newloc
@@ -375,14 +373,13 @@ class A_Star:
         path = self.a_star(world_to_map(self.start, self.my_map), world_to_map(goal, self.my_map))
         print "path is:\n" + str(path)
         self.publish_path(path)
+        self.initPublisher.publish(self.initCell)  # WHY DOESNT THIS PUBLISH???!!?!?
+        self.goalPublisher.publish(self.goalCell)
 
 
 if __name__ == '__main__':
     alg = A_Star()
     print("made algorithm")
     rospy.sleep(1)
-    #point1 = (0, 0)
-    #point2 = (-3, 4)
-    #print(alg.euclidean_heuristic(point1, point2))
     rospy.spin()
     pass
