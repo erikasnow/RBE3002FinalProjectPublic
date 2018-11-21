@@ -381,8 +381,6 @@ if __name__ == '__main__':
     alg = A_Star()
     print("made algorithm")
     rospy.sleep(1)
-    #point1 = (0, 0)
-    #point2 = (-3, 4)
-    #print(alg.euclidean_heuristic(point1, point2))
+
     rospy.spin()
     pass
