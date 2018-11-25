@@ -341,8 +341,6 @@ class A_Star:
             path.poses.append(pose)
 
         newpath = self.optimize_path(path)  # currently broken
-
-        self.pathPublisher.publish(newpath)
         # self.pathPublisher.publish(path)
         return newpath
 
