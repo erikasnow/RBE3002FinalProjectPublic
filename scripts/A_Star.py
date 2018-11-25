@@ -103,7 +103,7 @@ class A_Star:
                     priority = cost + self.euclidean_heuristic(next, goal)
                     frontier.put(next, priority)
                     came_from[next] = current
-                    rospy.sleep(0.75)
+                    rospy.sleep(0.01)
 
         # create the path by following came_from from goal back to the start
         path = [goal]
@@ -113,8 +113,9 @@ class A_Star:
             path.append(current)
 
         # reverse the path to put it in the right order
+        print "Path Found"
         path.reverse()
-
+        print "Returning Path"
         return path
 
     def euclidean_heuristic(self, point1, point2):

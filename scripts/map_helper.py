@@ -29,22 +29,22 @@ def get_neighbors(loc, my_map):
 
     #print("location: " + str(loc))
 
-    print("up: ")
+    #print("up: ")
     if is_valid_loc(up, my_map):
         up = round_point(up)
         neighbors.append(up)
 
-    print("down: ")
+    #print("down: ")
     if is_valid_loc(down, my_map):
         down = round_point(down)
         neighbors.append(down)
 
-    print("left: ")
+    #print("left: ")
     if is_valid_loc(left, my_map):
         left = round_point(left)
         neighbors.append(left)
 
-    print("right: ")
+    #print("right: ")
     if is_valid_loc(right, my_map):
         right = round_point(right)
         neighbors.append(right)
@@ -60,7 +60,7 @@ def is_valid_loc(loc, my_map):
     """
     loc = convert_location(loc, my_map)
     index = point_to_index(loc, my_map)
-    print "location: " + str(loc) + "| index: " + str(index) + "| value: " + str(my_map.data[index])
+    #print "location: " + str(loc) + "| index: " + str(index) + "| value: " + str(my_map.data[index])
     if (my_map.data[index] == 100 or my_map.data[index] == -1):
         # print("FALSE -- loc: " + str(loc) + " index: " + str(index) + " value: " + str(my_map.data[index]))
         return False
