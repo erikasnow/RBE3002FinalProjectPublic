@@ -163,14 +163,45 @@ class A_Star:
 #        """
 #        pass
 
-
     def optimize_path(self, path):
         """
-            remove redundant points in hte path
+            remove redundant points in the path
             :param path: list of tuples
             :return: reduced list of tuples
         """
-        pass
+        print"entered optimize"
+
+        print("old path: ")
+        print(path.poses)
+
+        index = 0
+        currx = path.poses[0].pose.position.x
+        curry = path.poses[0].pose.position.y
+
+        newpath = Path()
+        newpath.header.frame_id = 'map'
+        newpath.poses.append(path.poses[0])  # add first node to cleaned path
+
+        path.poses.pop(0)  # get rid of first node
+
+        for pose in path.poses:
+            if(currx != pose.pose.position.x):
+                if(curry != pose.pose.position.y):
+                    newpath.poses.append(path.poses[index-1])  # add the previous node
+                    currx = pose.pose.position.x  # x needs to change, but y should stay the same, I think
+                    index -= 1
+
+            elif(curry != pose.pose.position.y):
+                if(currx != pose.pose.position.x):
+                    newpath.poses.append(path.poses[index-1])  # add the previous node
+                    curry = pose.pose.position.y  # y needs to change, but x should stay the same, I think
+                    index -= 1
+
+            index += 1
+
+        print("new path: ")
+        print(newpath.poses)
+        return newpath
 
     def paint_frontier(self, frontier):
         """
@@ -195,7 +226,6 @@ class A_Star:
 
         self.frontierPublisher.publish(frontier_cells)
 
-
     def paint_explored(self, came_from):
         """
             finds the explored cells from A*'s "came_from"
@@ -216,7 +246,6 @@ class A_Star:
             explored_cells.cells.append(cell_as_point)
 
         self.exploredPublisher.publish(explored_cells)
-
 
     def paint_cells(self, frontier, came_from):
         # type: (list, tuple) -> None
@@ -244,7 +273,6 @@ class A_Star:
             frontier_cell.header = header
 
             self.wavefrontPublisher.publish(frontier_cell)
-
 
         point = Point()
         points = []
@@ -281,7 +309,7 @@ class A_Star:
             world_x, world_y = map_to_world(point, self.my_map)
 
             # make a PoseStamped at the real-world coorinates of the point
-            # currenlty has the orientation set to the default, to be ignored
+            # currently has the orientation set to the default, to be ignored
             pose = PoseStamped()
             pose.pose.position.x = world_x
             pose.pose.position.y = world_y
@@ -289,6 +317,9 @@ class A_Star:
             # append the new pose to the list of poses that make up the path
             path.poses.append(pose)
 
+        # newpath = self.optimize_path(path)  # currently broken
+
+        # self.pathPublisher.publish(newpath)
         self.pathPublisher.publish(path)
 
 #        path_cells = []
