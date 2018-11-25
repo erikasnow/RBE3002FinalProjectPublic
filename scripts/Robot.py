@@ -22,12 +22,14 @@ class Robot:
         #self.rvizSubscriber = rospy.Subscriber('rviz_click', PoseStamped, self.nav_to_pose)
         self.pathSubscriber = rospy.Subscriber('path', Path, self.handle_path)
 
+
         self.px = 0
         self.py = 0
         self.roll = 0
         self.pitch = 0
         self.yaw = 0
         print("made it through init")
+
 
     # deconstruct the path and call nav to pose for each one (I'm hoping this will wait until the robot is done each time)
     def handle_path(self, path):
@@ -131,6 +133,7 @@ class Robot:
         #print("currangle: " + str(currangle))
         endangle = (currangle + angle) % (2 * pi)
         #print("endangle: " + str(endangle))
+
 
         # grab necessary direction
         if(endangle < currangle):
