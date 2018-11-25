@@ -17,27 +17,36 @@ def get_neighbors(loc, my_map):
 
     cell_step = my_map.info.resolution
 
-    up = round_point((loc[0], loc[1] + cell_step))
-    down = round_point((loc[0], loc[1] - cell_step))
-    left = round_point((loc[0] - cell_step, loc[1]))
-    right = round_point((loc[0] + cell_step, loc[1]))
+    #up = round_point((loc[0], loc[1] + cell_step))
+    #down = round_point((loc[0], loc[1] - cell_step))
+    #left = round_point((loc[0] - cell_step, loc[1]))
+    #right = round_point((loc[0] + cell_step, loc[1]))
+
+    up = (loc[0], loc[1] + cell_step)
+    down = (loc[0], loc[1] - cell_step)
+    left = (loc[0] - cell_step, loc[1])
+    right =(loc[0] + cell_step, loc[1])
 
     #print("location: " + str(loc))
 
-    #print("up: ")
+    print("up: ")
     if is_valid_loc(up, my_map):
+        up = round_point(up)
         neighbors.append(up)
 
-    #print("down: ")
+    print("down: ")
     if is_valid_loc(down, my_map):
+        down = round_point(down)
         neighbors.append(down)
 
-    #print("left: ")
+    print("left: ")
     if is_valid_loc(left, my_map):
+        left = round_point(left)
         neighbors.append(left)
 
-    #print("right: ")
+    print("right: ")
     if is_valid_loc(right, my_map):
+        right = round_point(right)
         neighbors.append(right)
 
     return neighbors
@@ -51,7 +60,7 @@ def is_valid_loc(loc, my_map):
     """
     loc = convert_location(loc, my_map)
     index = point_to_index(loc, my_map)
-
+    print "location: " + str(loc) + "| index: " + str(index) + "| value: " + str(my_map.data[index])
     if (my_map.data[index] == 100 or my_map.data[index] == -1):
         # print("FALSE -- loc: " + str(loc) + " index: " + str(index) + " value: " + str(my_map.data[index]))
         return False
@@ -63,6 +72,7 @@ def is_valid_loc(loc, my_map):
 def convert_location(loc, my_map):
     """converts points to the grid"""
     cell_size = my_map.info.resolution
+
     x = loc[0]
     y = loc[1]
 
