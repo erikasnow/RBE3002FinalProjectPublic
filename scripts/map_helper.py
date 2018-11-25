@@ -17,26 +17,26 @@ def get_neighbors(loc, my_map):
 
     cell_step = my_map.info.resolution
 
-    up = (loc[0], loc[1] + cell_step)
-    down = (loc[0], loc[1] - cell_step)
-    left = (loc[0] - cell_step, loc[1])
-    right = (loc[0] + cell_step, loc[1])
+    up = round_point((loc[0], loc[1] + cell_step))
+    down = round_point((loc[0], loc[1] - cell_step))
+    left = round_point((loc[0] - cell_step, loc[1]))
+    right = round_point((loc[0] + cell_step, loc[1]))
 
-    print("location: " + str(loc))
+    #print("location: " + str(loc))
 
-    print("up: ")
+    #print("up: ")
     if is_valid_loc(up, my_map):
         neighbors.append(up)
 
-    print("down: ")
+    #print("down: ")
     if is_valid_loc(down, my_map):
         neighbors.append(down)
 
-    print("left: ")
+    #print("left: ")
     if is_valid_loc(left, my_map):
         neighbors.append(left)
 
-    print("right: ")
+    #print("right: ")
     if is_valid_loc(right, my_map):
         neighbors.append(right)
 
@@ -53,10 +53,10 @@ def is_valid_loc(loc, my_map):
     index = point_to_index(loc, my_map)
 
     if (my_map.data[index] == 100 or my_map.data[index] == -1):
-        print("FALSE -- loc: " + str(loc) + " index: " + str(index) + " value: " + str(my_map.data[index]))
+        # print("FALSE -- loc: " + str(loc) + " index: " + str(index) + " value: " + str(my_map.data[index]))
         return False
     else:
-        print("TRUE -- loc: " + str(loc) + " index: " + str(index) + " value: " + str(my_map.data[index]))
+        # print("TRUE -- loc: " + str(loc) + " index: " + str(index) + " value: " + str(my_map.data[index]))
         return True
 
 
@@ -81,7 +81,7 @@ def world_to_map(worldpt, my_map):
         :return: tuple of converted point
     """
     maporigin = my_map.info.origin.position
-    print "maporigin:\n" + str(maporigin)
+    #print "maporigin:\n" + str(maporigin)
 
     mapx = worldpt[0] - maporigin.x
     mapy = worldpt[1] - maporigin.y
@@ -167,3 +167,18 @@ def point_to_index(location, my_map):
     index = x + (y * width)
 
     return index
+
+
+
+def round_point(point):
+    """
+    reduces the significant figures of a float to be more manageable
+    :param point: Tuple of coordinate
+    :param my_map: occupancy grid of the current map
+    :return: tuple of converted points
+    """
+    x = round(point[0], 2)
+    y = round(point[1], 2)
+
+    rounded_point = (x,y)
+    return rounded_point

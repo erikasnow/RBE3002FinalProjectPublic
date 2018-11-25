@@ -2,7 +2,7 @@
 import rospy
 from map_helper import *
 from nav_msgs.msg import Path, GridCells
-from nav_msgs.srv import GetPlan
+from nav_msgs.srv import GetPlan, GetPlanResponse
 from geometry_msgs.msg import PoseStamped, Point
 from math import sqrt
 from PriorityQueue import *
@@ -46,9 +46,8 @@ class A_Star:
         goal = world_to_map(world_goal, self.my_map)
 
         path_cells = self.a_star(start, goal)
-        path = create_path(path_cells)
-
-        return AstarResponse(path)
+        path = self.create_path(path_cells)
+        return GetPlanResponse(path)
 
     def dynamic_map_client(self, msg):
         """
@@ -66,7 +65,11 @@ class A_Star:
             :return: list of tuples along the optimal path
         """
         print "processing path"
-
+        goal = round_point(goal)
+        start = round_point(start)
+        print "start point: " + str(start)
+        print "end point: " + str(goal)
+        print " "
         frontier = PriorityQueue()
         came_from = {}
         cost_so_far = {}
@@ -78,8 +81,8 @@ class A_Star:
 
         while not frontier.empty():
             current = frontier.get()
-
-            if current == goal:
+            if (abs(current[0] - goal[0])<0.1 and abs(current[1]-goal[1] < 0.1)):
+                came_from[goal] = current
                 break
 
             wavefront = get_neighbors(current, self.my_map)
@@ -100,11 +103,11 @@ class A_Star:
                     priority = cost + self.euclidean_heuristic(next, goal)
                     frontier.put(next, priority)
                     came_from[next] = current
+                    rospy.sleep(0.5)
 
         # create the path by following came_from from goal back to the start
         path = [goal]
         current = goal
-
         while current is not start:
             current = came_from[current]
             path.append(current)
