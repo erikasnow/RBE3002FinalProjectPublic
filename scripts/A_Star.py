@@ -152,17 +152,6 @@ class A_Star:
         dist = xdelta + ydelta
         return dist
 
-
-#    def reconstruct_path(self, start, goal, came_from):
-#        """
-#            Rebuild the path from a dictionary
-#            :param start: starting key
-#            :param goal: starting value
-#            :param came_from: dictionary of tuples
-#            :return: list of tuples
-#        """
-#        pass
-
     def optimize_path(self, path):
         """
             remove redundant points in the path
@@ -174,33 +163,66 @@ class A_Star:
         print("old path: ")
         print(path.poses)
 
-        index = 0
         currx = path.poses[0].pose.position.x
         curry = path.poses[0].pose.position.y
+
+        xflag = False
+        yflag = False  # need to figure out how to initialize this
 
         newpath = Path()
         newpath.header.frame_id = 'map'
         newpath.poses.append(path.poses[0])  # add first node to cleaned path
 
+        initpose = PoseStamped()
+
+        newpath.poses.append(initpose)  # initialize the next node in list
+
+        if(currx == path.poses[1].pose.position.x):
+            xflag = True
+        else:
+            yflag = True
+
         path.poses.pop(0)  # get rid of first node
 
         for pose in path.poses:
-            if(currx != pose.pose.position.x):
-                if(curry != pose.pose.position.y):
-                    newpath.poses.append(path.poses[index-1])  # add the previous node
-                    currx = pose.pose.position.x  # x needs to change, but y should stay the same, I think
-                    index -= 1
-
-            elif(curry != pose.pose.position.y):
+            print"entered for loop"
+            if(xflag):
+                curry = pose.pose.position.y
                 if(currx != pose.pose.position.x):
-                    newpath.poses.append(path.poses[index-1])  # add the previous node
-                    curry = pose.pose.position.y  # y needs to change, but x should stay the same, I think
-                    index -= 1
+                    xflag = False
+                    yflag = True
 
-            index += 1
+                    newpath.poses[-1].pose.position.x = currx
+                    newpath.poses[-1].pose.position.y = curry
+
+                    currx = pose.pose.position.x  # make sure these are on the right node
+                    curry = pose.pose.position.y
+
+                    newpose = PoseStamped()
+                    newpath.poses.append(newpose)
+
+            elif(yflag):
+                currx = pose.pose.position.x
+                if(curry != pose.pose.position.y):
+                    xflag = True
+                    yflag = False
+
+                    newpath.poses[-1].pose.position.x = currx
+                    newpath.poses[-1].pose.position.y = curry
+
+                    currx = pose.pose.position.x  # make sure these are on the right node
+                    curry = pose.pose.position.y
+
+                    newpose = PoseStamped()
+                    newpath.poses.append(newpose)
+
+        # make sure to reach the goal node
+        newpath.poses[-1].pose.position.x = path.poses[-1].pose.position.x
+        newpath.poses[-1].pose.position.y = path.poses[-1].pose.position.y
 
         print("new path: ")
         print(newpath.poses)
+        
         return newpath
 
     def paint_frontier(self, frontier):
@@ -317,21 +339,10 @@ class A_Star:
             # append the new pose to the list of poses that make up the path
             path.poses.append(pose)
 
-        # newpath = self.optimize_path(path)  # currently broken
+        newpath = self.optimize_path(path)  # currently broken
 
-        # self.pathPublisher.publish(newpath)
-        self.pathPublisher.publish(path)
-
-#        path_cells = []
-#        grid = GridCells()
-#
-#        # copy all the poses in the path into Points for the GridCells message
-#        for pose in path.poses:
-#            cell_loc = pose.pose.position
-#            path_cells.append(cell_loc)
-#
-#        grid.cells = path_cells
-#        self.pathPublisher.publish(grid)
+        self.pathPublisher.publish(newpath)
+        # self.pathPublisher.publish(path)
 
     def display_start(self, msg):
         """

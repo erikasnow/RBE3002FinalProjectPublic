@@ -30,6 +30,6 @@
 
   <node name="map_frame_transform" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 /odom /map 100"/>
 
-  <!--<node name="astar" pkg="rbe3002code02" type="A_Star.py"/>-->
+  <node name="astar" pkg="rbe3002code02" type="A_Star.py"/>
 
 </launch>
