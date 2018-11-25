@@ -222,7 +222,7 @@ class A_Star:
 
         print("new path: ")
         print(newpath.poses)
-        
+
         return newpath
 
     def paint_frontier(self, frontier):
@@ -339,7 +339,7 @@ class A_Star:
             # append the new pose to the list of poses that make up the path
             path.poses.append(pose)
 
-        newpath = self.optimize_path(path)  # currently broken
+        newpath = self.optimize_path(path)
 
         self.pathPublisher.publish(newpath)
         # self.pathPublisher.publish(path)
