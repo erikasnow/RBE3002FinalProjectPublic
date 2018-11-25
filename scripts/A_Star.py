@@ -2,65 +2,60 @@
 import rospy
 from map_helper import *
 from nav_msgs.msg import Path, GridCells
+from nav_msgs.srv import GetPlan, GetPlanResponse
 from geometry_msgs.msg import PoseStamped, Point
 from math import sqrt
 from PriorityQueue import *
 import std_msgs
+#from Astar.srv import *
 
 
 class A_Star:
 
     def __init__(self):
         """
-            This node handles A* path requests
-            It is accessed using a service call. It can the publish grid cells
-            to show the frontier, closed and path.
+            This node runs a service for A* path requests between two
+            grid locations. It publishes the frontier and explored cells
+            while running the A* algorithm for visualization and debugging.
         """
+        rospy.init_node("a_star")
 
-        rospy.init_node("a_star")  # start node
-        # for setting initial position on rviz
-        self.initSubscriber = rospy.Subscriber('initialpose', PoseWithCovarianceStamped, self.display_start)
-        self.initPublisher = rospy.Publisher('initcell', GridCells, queue_size=1)
-
-        # for setting goal position on rviz
-        self.goalSubscriber = rospy.Subscriber('move_base_simple/goal', PoseStamped, self.display_goal)
-        self.goalPublisher = rospy.Publisher('goalcell', GridCells, queue_size=1)
-
-        # make an occupancy grid for the data
+        # occupancy grid for the data
         self.my_map = None
-        self.mapSubscriber = rospy.Subscriber('map', OccupancyGrid, self.dynamic_map_client)  # is this right?
+        self.mapSubscriber = rospy.Subscriber('map', OccupancyGrid, self.dynamic_map_client)
 
-        # for setting the frontier on rviz
+        # publish the frontier and explored cells while running A*
         self.frontierPublisher = rospy.Publisher('frontier', GridCells, queue_size=1)
-
-        # for showing the explored cells during A*
         self.exploredPublisher = rospy.Publisher('explored', GridCells, queue_size=1)
 
-        # for setting the path on rviz
-        self.pathPublisher = rospy.Publisher('path', Path, queue_size=1)
-        #self.pathPublisher = rospy.Publisher('path', GridCells, queue_size=1)
-
-        start = (0,0) # variable to store the start cell todo: remove after testing
-
-    def handle_a_star(self, req):
-
+    def handle_astar(self, req):
         """
             service call that uses A* to create a path.
             This can be altered to also grab the orentation for better heuristic
-            :param req: GetPlan
-            :return: Path()
+            :param req: GetPlan() with start and goal data
+            :return: GetPlan() with a Path()
         """
-        pass
+        start_x = req.start.pose.position.x
+        start_y = req.start.pose.position.y
+        goal_x = req.goal.pose.position.x
+        goal_y = req.goal.pose.position.y
+
+        world_start = (start_x, start_y)
+        world_goal = (goal_x, goal_y)
+        start = world_to_map(world_start, self.my_map)
+        goal = world_to_map(world_goal, self.my_map)
+
+        path_cells = self.a_star(start, goal)
+        path = self.create_path(path_cells)
+        return GetPlanResponse(path)
 
     def dynamic_map_client(self, msg):
-
         """
-            Service call to get map and set class variables
-            This can be changed to call the expanded map
+            Updates my_map with data from the map topic
+            :param msg: OccupancyGrid from the map topic
             :return:
         """
-        print("grab occupancy grid")
-        self.my_map = msg  # I think I just made a variable with the current map from the map server?
+        self.my_map = msg
 
     def a_star(self, start, goal):
         """
@@ -69,7 +64,12 @@ class A_Star:
             :param goal: tuple of goal pose
             :return: list of tuples along the optimal path
         """
-
+        print "processing path"
+        goal = round_point(goal)
+        start = round_point(start)
+        print "start point: " + str(start)
+        print "end point: " + str(goal)
+        print " "
         frontier = PriorityQueue()
         came_from = {}
         cost_so_far = {}
@@ -81,14 +81,12 @@ class A_Star:
 
         while not frontier.empty():
             current = frontier.get()
-
-            if current == goal:
+            if (abs(current[0] - goal[0])<0.1 and abs(current[1]-goal[1] < 0.1)):
+                came_from[goal] = current
                 break
 
             wavefront = get_neighbors(current, self.my_map)
-            #self.paint_cells(wavefront, current)
 
-            #print "get_neighbors returns:\n" + str(get_neighbors(current, self.my_map))
             for next in wavefront:
 
                 # publish the frontier and explored cells to rviz for debugging
@@ -105,26 +103,27 @@ class A_Star:
                     priority = cost + self.euclidean_heuristic(next, goal)
                     frontier.put(next, priority)
                     came_from[next] = current
+                    rospy.sleep(0.01)
 
         # create the path by following came_from from goal back to the start
         path = [goal]
         current = goal
-        #print "came_from is:\n" + str(came_from)
         while current is not start:
             current = came_from[current]
             path.append(current)
 
-        path.reverse() # reverse the path to put it in the right order
-
+        # reverse the path to put it in the right order
+        print "Path Found"
+        path.reverse()
+        print "Returning Path"
         return path
-
 
     def euclidean_heuristic(self, point1, point2):
         """
             calculate the dist between two points
             :param point1: tuple of location
             :param point2: tuple of location
-            :return: dist between two points
+            :return: Euclidean distance between two points
         """
         x1, y1 = point1
         x2, y2 = point2
@@ -139,8 +138,8 @@ class A_Star:
     def move_cost(self, point1, point2):
         """
             calculate the Manhattan distance between two points
-            :param current: tuple of location
-            :param next: tuple of location
+            :param point1: tuple of location
+            :param point2: tuple of location
             :return: Manhattan distance between two points
         """
         x1, y1 = point1
@@ -150,33 +149,86 @@ class A_Star:
         ydelta = abs(y2 - y1)
 
         dist = xdelta + ydelta
+
         return dist
-
-
-#    def reconstruct_path(self, start, goal, came_from):
-#        """
-#            Rebuild the path from a dictionary
-#            :param start: starting key
-#            :param goal: starting value
-#            :param came_from: dictionary of tuples
-#            :return: list of tuples
-#        """
-#        pass
-
 
     def optimize_path(self, path):
         """
-            remove redundant points in hte path
+            remove redundant points in the path
             :param path: list of tuples
             :return: reduced list of tuples
         """
-        pass
+        print"entered optimize"
+
+        print("old path: ")
+        print(path.poses)
+
+        currx = path.poses[0].pose.position.x
+        curry = path.poses[0].pose.position.y
+
+        xflag = False
+        yflag = False  # need to figure out how to initialize this
+
+        newpath = Path()
+        newpath.header.frame_id = 'map'
+        newpath.poses.append(path.poses[0])  # add first node to cleaned path
+
+        initpose = PoseStamped()
+
+        newpath.poses.append(initpose)  # initialize the next node in list
+
+        if(currx == path.poses[1].pose.position.x):
+            xflag = True
+        else:
+            yflag = True
+
+        path.poses.pop(0)  # get rid of first node
+
+        for pose in path.poses:
+            print"entered for loop"
+            if(xflag):
+                curry = pose.pose.position.y
+                if(currx != pose.pose.position.x):
+                    xflag = False
+                    yflag = True
+
+                    newpath.poses[-1].pose.position.x = currx
+                    newpath.poses[-1].pose.position.y = curry
+
+                    currx = pose.pose.position.x  # make sure these are on the right node
+                    curry = pose.pose.position.y
+
+                    newpose = PoseStamped()
+                    newpath.poses.append(newpose)
+
+            elif(yflag):
+                currx = pose.pose.position.x
+                if(curry != pose.pose.position.y):
+                    xflag = True
+                    yflag = False
+
+                    newpath.poses[-1].pose.position.x = currx
+                    newpath.poses[-1].pose.position.y = curry
+
+                    currx = pose.pose.position.x  # make sure these are on the right node
+                    curry = pose.pose.position.y
+
+                    newpose = PoseStamped()
+                    newpath.poses.append(newpose)
+
+        # make sure to reach the goal node
+        newpath.poses[-1].pose.position.x = path.poses[-1].pose.position.x
+        newpath.poses[-1].pose.position.y = path.poses[-1].pose.position.y
+
+        print("new path: ")
+        print(newpath.poses)
+
+        return newpath
 
     def paint_frontier(self, frontier):
         """
-            finds the frontier cells from A*'s "came_from"
-            dictionary and paints it to rviz for debugging
-            :param came_from: came_from dictionary used by A*
+            Paints the A* frontier cells to rviz for debugging
+            :param frontier: dictionary storing the frontier cells
             :return:
         """
         frontier_elements = map(lambda foo: foo[1], frontier.elements)
@@ -194,7 +246,6 @@ class A_Star:
             frontier_cells.cells.append(cell_as_point)
 
         self.frontierPublisher.publish(frontier_cells)
-
 
     def paint_explored(self, came_from):
         """
@@ -216,7 +267,6 @@ class A_Star:
             explored_cells.cells.append(cell_as_point)
 
         self.exploredPublisher.publish(explored_cells)
-
 
     def paint_cells(self, frontier, came_from):
         # type: (list, tuple) -> None
@@ -245,7 +295,6 @@ class A_Star:
 
             self.wavefrontPublisher.publish(frontier_cell)
 
-
         point = Point()
         points = []
         loc = convert_location(came_from, self.my_map)
@@ -264,7 +313,7 @@ class A_Star:
 
         self.searchedPublisher.publish(searched_cell)
 
-    def publish_path(self, points):
+    def create_path(self, points):
         """
             Publishes a Path() containing the waypoints along the path
             :param points: list of tuples of the path
@@ -280,8 +329,8 @@ class A_Star:
             # origin of the map, from the tuple of grid coordinates A* returns
             world_x, world_y = map_to_world(point, self.my_map)
 
-            # make a PoseStamped at the real-world coorinates of the point
-            # currenlty has the orientation set to the default, to be ignored
+            # make a PoseStamped at the real-world coordinates of the point
+            # currently has the orientation set to the default, to be ignored
             pose = PoseStamped()
             pose.pose.position.x = world_x
             pose.pose.position.y = world_y
@@ -289,98 +338,14 @@ class A_Star:
             # append the new pose to the list of poses that make up the path
             path.poses.append(pose)
 
-        self.pathPublisher.publish(path)
+        newpath = self.optimize_path(path)  # currently broken
 
-#        path_cells = []
-#        grid = GridCells()
-#
-#        # copy all the poses in the path into Points for the GridCells message
-#        for pose in path.poses:
-#            cell_loc = pose.pose.position
-#            path_cells.append(cell_loc)
-#
-#        grid.cells = path_cells
-#        self.pathPublisher.publish(grid)
-
-    def display_start(self, msg):
-        """
-        Get pose of initial location from rviz click and paint corresponding cell blue
-        :param msg:
-        :return:
-        """
-        header = msg.header
-        print("msg.header.seq = " + str(msg.header.seq))
-        header.stamp = rospy.Time.now()
-
-        point = Point()
-        point.x = msg.pose.pose.position.x
-        point.y = msg.pose.pose.position.y
-
-        loc = (point.x, point.y)
-        print("old start point:\n" + str(point))
-
-        newloc = convert_location(loc, self.my_map)
-
-        point.x, point.y = newloc
-        print("new start point:\n" + str(point))
-
-        points = []
-        points.append(point)
-
-        initcell = GridCells()
-        initcell.header = header
-        initcell.cell_width = self.my_map.info.resolution
-        initcell.cell_height = self.my_map.info.resolution
-        initcell.cells = points
-
-        self.start = newloc # todo: remove this after testing
-        self.initPublisher.publish(initcell)
-
-    def display_goal(self, msg):
-        """
-        Get pose of goal location from rviz click and paint corresponding cell red
-        :param msg:
-        :return:
-        """
-        header = msg.header
-        print("msg.header.seq = " + str(msg.header.seq))
-        header.stamp = rospy.Time.now()
-
-        point = Point()
-        point.x = msg.pose.position.x
-        point.y = msg.pose.position.y
-
-        loc = (point.x, point.y)
-        print("old goal point:\n" + str(point))
-
-        newloc = convert_location(loc, self.my_map)
-
-        point.x, point.y = newloc
-        print("new goal point:\n" + str(point))
-
-        points = []
-        points.append(point)
-
-        goalcell = GridCells()
-        goalcell.header = header
-        goalcell.cell_width = self.my_map.info.resolution
-        goalcell.cell_height = self.my_map.info.resolution
-        goalcell.cells = points
-
-        self.goalPublisher.publish(goalcell)
-
-        # todo: remove this section after testing:
-        goal = newloc
-        print "processing path"
-        path = self.a_star(world_to_map(self.start, self.my_map), world_to_map(goal, self.my_map))
-        print "path is:\n" + str(path)
-        self.publish_path(path)
+        # self.pathPublisher.publish(path)
+        return newpath
 
 
 if __name__ == '__main__':
     alg = A_Star()
-    print("made algorithm")
-    rospy.sleep(1)
-
+    s = rospy.Service('astar', GetPlan, alg.handle_astar)
+    print "A* service is running"
     rospy.spin()
-    pass

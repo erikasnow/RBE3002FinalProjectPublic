@@ -2,7 +2,7 @@
 import rospy
 import sys
 from map_helper import *
-from nav_msgs.srv import GetPlan
+from nav_msgs.srv import GetPlan, GetPlanResponse
 #from Astar.srv import *
 
 
@@ -94,7 +94,9 @@ def handle_goal(msg):
         get_plan.start = start_pose
         get_plan.goal = goal_pose
         #path = astar_service(get_plan)
-        path = astar_service(start_pose, goal_pose, 0.1)
+        response = astar_service(start_pose, goal_pose, 0.1)
+        #print response
+        path = response.plan
         pathPublisher.publish(path)
     except rospy.ServiceException, e:
         print "\nA* service call failed:\n" + str(e)
@@ -108,6 +110,8 @@ def handle_map_updates(msg):
 if __name__ == '__main__':
 
     rospy.init_node("main")
+    print "main node initialized"
+
 
     #start_loc = (0, 0)
     start_pose = PoseStamped()

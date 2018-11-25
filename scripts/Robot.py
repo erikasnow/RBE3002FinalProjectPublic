@@ -22,6 +22,7 @@ class Robot:
         #self.rvizSubscriber = rospy.Subscriber('rviz_click', PoseStamped, self.nav_to_pose)
         self.pathSubscriber = rospy.Subscriber('path', Path, self.handle_path)
 
+
         self.px = 0
         self.py = 0
         self.roll = 0
@@ -29,10 +30,46 @@ class Robot:
         self.yaw = 0
         print("made it through init")
 
+
     # deconstruct the path and call nav to pose for each one (I'm hoping this will wait until the robot is done each time)
     def handle_path(self, path):
+        print("entered handle_path")
+        print("")
+        # delete first cell in the path so that Robot assumes it's at the start location
+        # path.poses.pop(0)
+
+        self.nav_to_pose(path.poses[0])
+        path.poses.pop(0)
+
         for pose in path.poses:
-            self.nav_to_pose(pose)
+            print(pose.pose)
+            #self.nav_to_pose(pose)
+            self.astar_nav(pose)
+
+        print("")
+        print("end of handle_path")
+
+    def astar_nav(self, goal):
+        print("")
+        print("entered astar_nav")
+
+        goalx = goal.pose.position.x
+        goaly = goal.pose.position.y
+        #quat = goal.pose.orientation
+        #q = [quat.x, quat.y, quat.z, quat.w]
+        #goalroll, goalpitch, goalyaw = euler_from_quaternion(q)
+
+        # rotate toward goal
+        currx = self.px
+        curry = self.py
+        deltax = goalx - currx
+        deltay = goaly - curry
+        angle = atan2(deltay, deltax)  # now have desired angle to rotate
+        self.rotate(angle)
+
+        # drive straight
+        distance = sqrt((deltax * deltax) + (deltay * deltay))
+        self.drive_straight(0.5, distance)
 
     def nav_to_pose(self, goal):
         # type: (PoseStamped) -> None
@@ -42,6 +79,8 @@ class Robot:
         :param goal: PoseStamped
         :return:
         """
+        print("")
+        print("entered nav_to_pose")
 
         goalx = goal.pose.position.x
         goaly = goal.pose.position.y
@@ -83,12 +122,10 @@ class Robot:
 
         currpos = sqrt((self.px * self.px) + (self.py * self.py))
         change = currpos - startpos
-        print(abs(-5))
         currdist = abs(change)
+        vel_msg = Twist()
         while (currdist < distance):
-            print("entered while loop")
             # start driving forward (i.e tell turtlebot to move at certain velocity -> publish a cmd_vel message)
-            vel_msg = Twist()
             vel_msg.linear.x = speed
             vel_msg.linear.y = 0
             vel_msg.linear.z = 0
@@ -104,7 +141,6 @@ class Robot:
             currdist = abs(change)
 
         # stop when set distance has been achieved (i.e publish a cmd_vel message w/ all zeroes)
-        print("exited while loop")
         vel_msg.linear.x = 0
         self.velPublisher.publish(vel_msg)
 
@@ -117,9 +153,8 @@ class Robot:
         print("entered rotate")
         # set initial position
         currangle = self.yaw % (2 * pi)  # get rid of gross pi/ -pi thing
-        print("currangle: " + str(currangle))
         endangle = (currangle + angle) % (2 * pi)
-        print("endangle: " + str(endangle))
+
 
         # grab necessary direction
         if(endangle < currangle):
@@ -129,10 +164,10 @@ class Robot:
 
         threshold = 0.1  # allowed error in radians
 
+        vel_msg = Twist()
         # move in that direction until you've rotated the total specified angle
         while (threshold < abs(endangle-currangle)):
             # start spinning robot in correct direction
-            vel_msg = Twist()
             vel_msg.linear.x = 0
             vel_msg.linear.y = 0
             vel_msg.linear.z = 0
