@@ -7,7 +7,6 @@ from geometry_msgs.msg import PoseStamped, Point
 from math import sqrt
 from PriorityQueue import *
 import std_msgs
-#from Astar.srv import *
 
 
 class A_Star:
@@ -30,8 +29,7 @@ class A_Star:
 
     def handle_astar(self, req):
         """
-            service call that uses A* to create a path.
-            This can be altered to also grab the orentation for better heuristic
+            service call that uses A* to create a path
             :param req: GetPlan() with start and goal data
             :return: GetPlan() with a Path()
         """
@@ -67,9 +65,6 @@ class A_Star:
         print "processing path"
         goal = round_point(goal)
         start = round_point(start)
-        print "start point: " + str(start)
-        print "end point: " + str(goal)
-        print " "
         frontier = PriorityQueue()
         came_from = {}
         cost_so_far = {}
@@ -81,7 +76,7 @@ class A_Star:
 
         while not frontier.empty():
             current = frontier.get()
-            if (abs(current[0] - goal[0])<0.1 and abs(current[1]-goal[1] < 0.1)):
+            if abs(current[0] - goal[0])<0.1 and abs(current[1]-goal[1] < 0.1):
                 came_from[goal] = current
                 break
 
@@ -92,6 +87,7 @@ class A_Star:
                 # publish the frontier and explored cells to rviz for debugging
                 self.paint_frontier(frontier)
                 self.paint_explored(came_from)
+                rospy.sleep(0.01)
 
                 # find the total cost of going from start to next
                 cost = cost_so_far[current] + self.move_cost(current, next)
@@ -103,7 +99,6 @@ class A_Star:
                     priority = cost + self.euclidean_heuristic(next, goal)
                     frontier.put(next, priority)
                     came_from[next] = current
-                    rospy.sleep(0.01)
 
         # create the path by following came_from from goal back to the start
         path = [goal]
@@ -113,9 +108,8 @@ class A_Star:
             path.append(current)
 
         # reverse the path to put it in the right order
-        print "Path Found"
         path.reverse()
-        print "Returning Path"
+        print "path found"
         return path
 
     def euclidean_heuristic(self, point1, point2):
@@ -132,7 +126,6 @@ class A_Star:
         ydelta = abs(y2 - y1)
 
         dist = sqrt((xdelta * xdelta) + (ydelta * ydelta))
-
         return dist
 
     def move_cost(self, point1, point2):
@@ -149,7 +142,6 @@ class A_Star:
         ydelta = abs(y2 - y1)
 
         dist = xdelta + ydelta
-
         return dist
 
     def optimize_path(self, path):
@@ -158,11 +150,6 @@ class A_Star:
             :param path: list of tuples
             :return: reduced list of tuples
         """
-        print"entered optimize"
-
-        print("old path: ")
-        print(path.poses)
-
         currx = path.poses[0].pose.position.x
         curry = path.poses[0].pose.position.y
 
@@ -185,7 +172,6 @@ class A_Star:
         path.poses.pop(0)  # get rid of first node
 
         for pose in path.poses:
-            print"entered for loop"
             if(xflag):
                 curry = pose.pose.position.y
                 if(currx != pose.pose.position.x):
@@ -219,9 +205,6 @@ class A_Star:
         # make sure to reach the goal node
         newpath.poses[-1].pose.position.x = path.poses[-1].pose.position.x
         newpath.poses[-1].pose.position.y = path.poses[-1].pose.position.y
-
-        print("new path: ")
-        print(newpath.poses)
 
         return newpath
 
@@ -268,56 +251,12 @@ class A_Star:
 
         self.exploredPublisher.publish(explored_cells)
 
-    def paint_cells(self, frontier, came_from):
-        # type: (list, tuple) -> None
-        """
-            published cell of A* to Rviz
-            :param frontier: tuples of the point on the frontier set
-            :param came_from: tuples of the point on the closed set
-            :return:
-        """
-        for f_cell in frontier:
-            point = Point()
-            points = []
-            loc = convert_location(f_cell, self.my_map)
-            point.x, point.y = loc
-            points.append(point)
-
-            header = std_msgs.msg.Header()
-            header.frame_id = str(0)
-
-            frontier_cell = GridCells()
-            frontier_cell.cells = points
-            frontier_cell.cell_width = self.my_map.info.resolution
-            frontier_cell.cell_height = self.my_map.info.resolution
-            header.stamp = rospy.Time.now()
-            frontier_cell.header = header
-
-            self.wavefrontPublisher.publish(frontier_cell)
-
-        point = Point()
-        points = []
-        loc = convert_location(came_from, self.my_map)
-        point.x, point.y = loc
-        points.append(point)
-
-        header = std_msgs.msg.Header()
-        header.frame_id = str(0)
-
-        searched_cell = GridCells()
-        searched_cell.cells = points
-        searched_cell.cell_width = self.my_map.info.resolution
-        searched_cell.cell_height = self.my_map.info.resolution
-        header.stamp = rospy.Time.now()
-        searched_cell.header = header
-
-        self.searchedPublisher.publish(searched_cell)
-
     def create_path(self, points):
         """
-            Publishes a Path() containing the waypoints along the path
+            Converts the path found by A* from an array of tuples
+            to a Path() containing the waypoints along the path
             :param points: list of tuples of the path
-            :return:
+            :return: optimized Path()
         """
         path = Path()
         path.header.frame_id = 'map'
@@ -338,9 +277,7 @@ class A_Star:
             # append the new pose to the list of poses that make up the path
             path.poses.append(pose)
 
-        newpath = self.optimize_path(path)  # currently broken
-
-        # self.pathPublisher.publish(path)
+        newpath = self.optimize_path(path)
         return newpath
 
 
