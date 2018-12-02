@@ -23,16 +23,12 @@ def get_neighbors(index, my_map):
     right = index + 1
 
     if is_valid_loc(up, my_map):
-        up = round_point(up)
         neighbors.append(up)
     if is_valid_loc(down, my_map):
-        down = round_point(down)
         neighbors.append(down)
     if is_valid_loc(left, my_map):
-        left = round_point(left)
         neighbors.append(left)
     if is_valid_loc(right, my_map):
-        right = round_point(right)
         neighbors.append(right)
 
     return neighbors

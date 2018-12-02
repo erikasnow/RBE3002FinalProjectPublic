@@ -63,8 +63,12 @@ class A_Star:
             :return: list of tuples along the optimal path
         """
         print "processing path"
+        print "start: " + str(start)
+        print "goal: " + str(goal)
         goal = point_to_index(round_point(goal),self.my_map)
         start = point_to_index(round_point(start), self.my_map)
+        print "start index: " + str(start)
+        print "goal index: " + str(goal)
 
         frontier = PriorityQueue()
         came_from = {}
@@ -77,22 +81,21 @@ class A_Star:
 
         while not frontier.empty():
             current = frontier.get()
-            if current == start:
-                came_from[goal] = current
+
+            if current == goal:
+                #came_from[goal] = current
                 break
 
             wavefront = get_neighbors(current, self.my_map)
 
             for next in wavefront:
-
                 # publish the frontier and explored cells to rviz for debugging
                 self.paint_frontier(frontier)
                 self.paint_explored(came_from)
-                rospy.sleep(0.01)
+                #rospy.sleep(0.01)
 
                 # find the total cost of going from start to next
                 cost = cost_so_far[current] + self.move_cost(current, next)
-
                 # if this is the first time exploring next, add it in
                 # or, if we just found a faster way to get to next, update it
                 if next not in cost_so_far or cost < cost_so_far[next]:
@@ -120,8 +123,13 @@ class A_Star:
             :param index2: index of cell in occupancy grid
             :return: Euclidean distance between two points
         """
-        dist = abs(index1 - index2)
+        x1,y1 = index_to_point(index1,self.my_map)
+        x2,y2 = index_to_point(index2,self.my_map)
 
+        xdist = abs(x2 - x1)
+        ydist = abs(y2 - y1)
+
+        dist = sqrt(pow(xdist,2) + pow(ydist,2))
         return dist
 
     def move_cost(self, index1, index2):
@@ -132,11 +140,11 @@ class A_Star:
             :return: Manhattan distance between two points
         """
         map_width = self.my_map.info.width
-        e_dist = self.euclidean_heuristic(index1, index2)
+        x1,y1 = index_to_point(index1,self.my_map)
+        x2,y2 = index_to_point(index2,self.my_map)
 
-        y = e_dist / map_widith
-        x = e_dist % map_width
-
+        y = abs(y1 - y2)
+        x = abs(x1 - x2)
         cost = sqrt(pow(x,2) + pow(y,2))
         return cost
 
@@ -211,7 +219,6 @@ class A_Star:
             :return:
         """
         frontier_elements = map(lambda foo: foo[1], frontier.elements)
-
         frontier_cells = GridCells()
         frontier_cells.cell_width = self.my_map.info.resolution
         frontier_cells.cell_height = self.my_map.info.resolution
@@ -221,8 +228,9 @@ class A_Star:
         for cell in frontier_elements:
             cell_as_point = Point()
             cell = index_to_point(cell, self.my_map)
-            cell_as_point.x = map_to_world(cell, self.my_map)[0]
-            cell_as_point.y = map_to_world(cell, self.my_map)[1]
+            world_pt = map_to_world(cell, self.my_map)
+            cell_as_point.x = world_pt[0]
+            cell_as_point.y = world_pt[1]
             frontier_cells.cells.append(cell_as_point)
 
         self.frontierPublisher.publish(frontier_cells)
@@ -234,6 +242,7 @@ class A_Star:
             :param came_from: came_from dictionary used by A*
             :return:
         """
+
         explored_cells = GridCells()
         explored_cells.cell_width = self.my_map.info.resolution
         explored_cells.cell_height = self.my_map.info.resolution
@@ -264,6 +273,7 @@ class A_Star:
 
             # get the real-world coordinates of the point relative to the
             # origin of the map, from the tuple of grid coordinates A* returns
+            point = index_to_point(point,self.my_map)
             world_x, world_y = map_to_world(point, self.my_map)
 
             # make a PoseStamped at the real-world coordinates of the point
