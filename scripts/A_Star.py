@@ -63,8 +63,9 @@ class A_Star:
             :return: list of tuples along the optimal path
         """
         print "processing path"
-        goal = round_point(goal)
-        start = round_point(start)
+        goal = point_to_index(round_point(goal),self.my_map)
+        start = point_to_index(round_point(start), self.my_map)
+
         frontier = PriorityQueue()
         came_from = {}
         cost_so_far = {}
@@ -76,7 +77,7 @@ class A_Star:
 
         while not frontier.empty():
             current = frontier.get()
-            if abs(current[0] - goal[0])<0.1 and abs(current[1]-goal[1] < 0.1):
+            if current == start:
                 came_from[goal] = current
                 break
 
@@ -112,37 +113,32 @@ class A_Star:
         print "path found"
         return path
 
-    def euclidean_heuristic(self, point1, point2):
+    def euclidean_heuristic(self, index1, index2):
         """
             calculate the dist between two points
-            :param point1: tuple of location
-            :param point2: tuple of location
+            :param index1: index of cell in occupancy grid
+            :param index2: index of cell in occupancy grid
             :return: Euclidean distance between two points
         """
-        x1, y1 = point1
-        x2, y2 = point2
+        dist = abs(index1 - index2)
 
-        xdelta = abs(x2 - x1)
-        ydelta = abs(y2 - y1)
-
-        dist = sqrt((xdelta * xdelta) + (ydelta * ydelta))
         return dist
 
-    def move_cost(self, point1, point2):
+    def move_cost(self, index1, index2):
         """
             calculate the Manhattan distance between two points
-            :param point1: tuple of location
-            :param point2: tuple of location
+            :param index1: tuple of location
+            :param index2: tuple of location
             :return: Manhattan distance between two points
         """
-        x1, y1 = point1
-        x2, y2 = point2
+        map_width = self.my_map.info.width
+        e_dist = self.euclidean_heuristic(index1, index2)
 
-        xdelta = abs(x2 - x1)
-        ydelta = abs(y2 - y1)
+        y = e_dist / map_widith
+        x = e_dist % map_width
 
-        dist = xdelta + ydelta
-        return dist
+        cost = sqrt(pow(x,2) + pow(y,2))
+        return cost
 
     def optimize_path(self, path):
         """
@@ -224,6 +220,7 @@ class A_Star:
 
         for cell in frontier_elements:
             cell_as_point = Point()
+            cell = index_to_point(cell, self.my_map)
             cell_as_point.x = map_to_world(cell, self.my_map)[0]
             cell_as_point.y = map_to_world(cell, self.my_map)[1]
             frontier_cells.cells.append(cell_as_point)
@@ -245,6 +242,7 @@ class A_Star:
 
         for cell in came_from:
             cell_as_point = Point()
+            cell = index_to_point(cell, self.my_map)
             cell_as_point.x = map_to_world(cell, self.my_map)[0]
             cell_as_point.y = map_to_world(cell, self.my_map)[1]
             explored_cells.cells.append(cell_as_point)

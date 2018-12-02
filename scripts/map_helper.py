@@ -7,7 +7,7 @@ from math import *
 import tf
 
 
-def get_neighbors(loc, my_map):
+def get_neighbors(index, my_map):
     """
         returns the legal neighbors of loc for a 4-connected robot
         :param loc: tuple of location
@@ -15,12 +15,12 @@ def get_neighbors(loc, my_map):
     """
     neighbors = []
 
-    cell_step = my_map.info.resolution
+    map_width = my_map.info.width
 
-    up = (loc[0], loc[1] + cell_step)
-    down = (loc[0], loc[1] - cell_step)
-    left = (loc[0] - cell_step, loc[1])
-    right =(loc[0] + cell_step, loc[1])
+    up = index + map_width
+    down = index - map_width
+    left = index - 1
+    right = index + 1
 
     if is_valid_loc(up, my_map):
         up = round_point(up)
@@ -38,15 +38,12 @@ def get_neighbors(loc, my_map):
     return neighbors
 
 
-def is_valid_loc(loc, my_map):
+def is_valid_loc(index, my_map):
     """
         Gets if a point is a legal location
         :param loc: tuple of location
         :return: boolean is a legal point
     """
-    loc = convert_location(loc, my_map)
-    index = point_to_index(loc, my_map)
-
     if (my_map.data[index] == 100 or my_map.data[index] == -1):
         return False
     else:
