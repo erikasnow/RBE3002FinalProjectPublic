@@ -20,8 +20,8 @@ class Robot:
         self.velPublisher = rospy.Publisher('cmd_vel', Twist, queue_size=1)
         self.odomSubscriber = rospy.Subscriber('odom', Odometry, self.odom_callback)
         #self.rvizSubscriber = rospy.Subscriber('rviz_click', PoseStamped, self.nav_to_pose)
-        self.pathSubscriber = rospy.Subscriber('path', Path, self.handle_path)
-
+        self.pathSubscriber = rospy.Subscriber('path', Path, self.handle_path)  # we should only bee publishing a pose to drive
+        #self.poseSubscriber = rospy.Subscriber('target', PoseStamped, self.astar_nav)  # this is what we eventually want
 
         self.px = 0
         self.py = 0
@@ -30,8 +30,7 @@ class Robot:
         self.yaw = 0
         print("made it through init")
 
-
-    # deconstruct the path and call nav to pose for each one (I'm hoping this will wait until the robot is done each time)
+    # deconstruct the path and call nav to pose for each one
     def handle_path(self, path):
         print("entered handle_path")
         print("")
@@ -43,7 +42,6 @@ class Robot:
 
         for pose in path.poses:
             print(pose.pose)
-            #self.nav_to_pose(pose)
             self.astar_nav(pose)
 
         print("")
@@ -55,9 +53,6 @@ class Robot:
 
         goalx = goal.pose.position.x
         goaly = goal.pose.position.y
-        #quat = goal.pose.orientation
-        #q = [quat.x, quat.y, quat.z, quat.w]
-        #goalroll, goalpitch, goalyaw = euler_from_quaternion(q)
 
         # rotate toward goal
         currx = self.px
@@ -118,7 +113,6 @@ class Robot:
         startx = self.px
         starty = self.py
         startpos = sqrt((startx * startx) + (starty * starty))
-        # probably don't need roll/pitch/yaw
 
         currpos = sqrt((self.px * self.px) + (self.py * self.py))
         change = currpos - startpos
@@ -155,14 +149,15 @@ class Robot:
         currangle = self.yaw % (2 * pi)  # get rid of gross pi/ -pi thing
         endangle = (currangle + angle) % (2 * pi)
 
-
+        """
         # grab necessary direction
         if(endangle < currangle):
-            direction = -1 # if angle was negative, move right
+            direction = -1  # if angle was negative, move right
         else:
-            direction = 1 # if angle was position, move left
+            direction = 1  # if angle was position, move left
+        """
 
-        threshold = 0.1  # allowed error in radians
+        threshold = 0.05  # allowed error in radians (5 degrees, currently)
 
         vel_msg = Twist()
         # move in that direction until you've rotated the total specified angle
@@ -173,7 +168,7 @@ class Robot:
             vel_msg.linear.z = 0
             vel_msg.angular.x = 0
             vel_msg.angular.y = 0
-            vel_msg.angular.z = (0.5 * direction)
+            vel_msg.angular.z = 0.3
             self.velPublisher.publish(vel_msg)
 
             # update the current angle
@@ -182,6 +177,9 @@ class Robot:
         # stop at desired angle
         vel_msg.angular.z = 0
         self.velPublisher.publish(vel_msg)
+        print("Desired angle: " + str(endangle))
+        print("Actual: " + str(currangle))
+        print("Error: " + str(abs(endangle - currangle)))
 
     # grabs pose of the turtlebot
     def odom_callback(self, msg):

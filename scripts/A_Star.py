@@ -158,10 +158,6 @@ class A_Star:
             :param path: list of tuples
             :return: reduced list of tuples
         """
-        print"entered optimize"
-
-        print("old path: ")
-        print(path.poses)
 
         currx = path.poses[0].pose.position.x
         curry = path.poses[0].pose.position.y
@@ -185,7 +181,6 @@ class A_Star:
         path.poses.pop(0)  # get rid of first node
 
         for pose in path.poses:
-            print"entered for loop"
             if(xflag):
                 curry = pose.pose.position.y
                 if(currx != pose.pose.position.x):
@@ -219,9 +214,6 @@ class A_Star:
         # make sure to reach the goal node
         newpath.poses[-1].pose.position.x = path.poses[-1].pose.position.x
         newpath.poses[-1].pose.position.y = path.poses[-1].pose.position.y
-
-        print("new path: ")
-        print(newpath.poses)
 
         return newpath
 
