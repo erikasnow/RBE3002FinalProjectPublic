@@ -93,7 +93,7 @@ class Robot:
 
         # drive straight
         distance = sqrt((deltax * deltax) + (deltay * deltay))
-        self.drive_straight(0.5, distance)
+        self.drive_straight(0.3, distance)
 
         # rotate to goal orientation
         finalangle = goalyaw - self.yaw
