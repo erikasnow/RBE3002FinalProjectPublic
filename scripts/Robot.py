@@ -41,9 +41,6 @@ class Robot:
         self.target = pose.position  # we don't really care about the orientation of the robot, so no Quaternion
 
     def nav_to_point(self):
-        print("")
-        print("entered nav function")
-
         goalx = self.target.x
         goaly = self.target.y
 
@@ -53,7 +50,7 @@ class Robot:
         deltax = goalx - currx
         deltay = goaly - curry
 
-        threshold = 0.05
+        threshold = 0.07
 
         if threshold < (abs(deltax)) or threshold < (abs(deltay)):
             angle = atan2(deltay, deltax)  # now have desired angle to rotate
