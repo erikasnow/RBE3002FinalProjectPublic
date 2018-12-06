@@ -122,9 +122,10 @@ def to_poses(points, my_map):
 def index_to_point(index, my_map):
     """convert a index to a point"""
     width = my_map.info.width
-    x = index % width
-    y = (index - x) / width
-    point = (x, y)
+    size = my_map.info.resolution
+    x = ((index % width) * size) + (size/4)
+    y = (((index - x) / width) * size) + (size/4)
+    point = convert_location((x, y),my_map)
     return point
 
 

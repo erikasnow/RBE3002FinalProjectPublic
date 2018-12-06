@@ -114,6 +114,7 @@ class A_Star:
         # reverse the path to put it in the right order
         path.reverse()
         print "path found"
+        print str(path)
         return path
 
     def euclidean_heuristic(self, index1, index2):
@@ -232,7 +233,7 @@ class A_Star:
             cell_as_point.x = world_pt[0]
             cell_as_point.y = world_pt[1]
             frontier_cells.cells.append(cell_as_point)
-
+        #print "Frontier cells: " + str(frontier_cells.cells)
         self.frontierPublisher.publish(frontier_cells)
 
     def paint_explored(self, came_from):
@@ -252,8 +253,9 @@ class A_Star:
         for cell in came_from:
             cell_as_point = Point()
             cell = index_to_point(cell, self.my_map)
-            cell_as_point.x = map_to_world(cell, self.my_map)[0]
-            cell_as_point.y = map_to_world(cell, self.my_map)[1]
+            world_pt = map_to_world(cell, self.my_map)
+            cell_as_point.x = world_pt[0]
+            cell_as_point.y = world_pt[1]
             explored_cells.cells.append(cell_as_point)
 
         self.exploredPublisher.publish(explored_cells)
@@ -269,22 +271,21 @@ class A_Star:
         path.header.frame_id = 'map'
 
         # copy all the points as PoseStamped() into the path
-        for point in points:
+        for index in points:
 
             # get the real-world coordinates of the point relative to the
             # origin of the map, from the tuple of grid coordinates A* returns
-            point = index_to_point(point,self.my_map)
+            point = index_to_point(index,self.my_map)
             world_x, world_y = map_to_world(point, self.my_map)
-
+            world_pt = round_point((world_x,world_y))
             # make a PoseStamped at the real-world coordinates of the point
             # currently has the orientation set to the default, to be ignored
             pose = PoseStamped()
-            pose.pose.position.x = world_x
-            pose.pose.position.y = world_y
+            pose.pose.position.x = world_pt[0]
+            pose.pose.position.y = world_pt[1]
 
             # append the new pose to the list of poses that make up the path
             path.poses.append(pose)
-
         newpath = self.optimize_path(path)
         return newpath
 
