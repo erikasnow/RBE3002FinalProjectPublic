@@ -22,6 +22,7 @@ class Robot:
         # self.rvizSubscriber = rospy.Subscriber('rviz_click', PoseStamped, self.nav_to_pose)
         # self.pathSubscriber = rospy.Subscriber('path', Path, self.handle_path)
         self.poseSubscriber = rospy.Subscriber('target', PoseStamped, self.set_target)
+        self.poseSubscriberTest = rospy.Subscriber('test', Pose, self.set_target)
 
         self.px = 0
         self.py = 0
@@ -37,7 +38,7 @@ class Robot:
     def set_target(self, pose):
         print("")
         print("target updated")
-        self.target = pose.pose.position  # we don't really care about the orientation of the robot, so no Quaternion
+        self.target = pose.position  # we don't really care about the orientation of the robot, so no Quaternion
 
     def nav_to_point(self):
         print("")
@@ -51,12 +52,16 @@ class Robot:
         curry = self.py
         deltax = goalx - currx
         deltay = goaly - curry
-        angle = atan2(deltay, deltax)  # now have desired angle to rotate
-        self.rotate(angle)
 
-        # drive straight
-        distance = sqrt((deltax * deltax) + (deltay * deltay))
-        self.drive_straight(0.5, distance)
+        threshold = 0.05
+
+        if threshold < (abs(deltax)) or threshold < (abs(deltay)):
+            angle = atan2(deltay, deltax)  # now have desired angle to rotate
+            self.rotate(angle)
+
+            # drive straight
+            distance = sqrt((deltax * deltax) + (deltay * deltay))
+            self.drive_straight(0.5, distance)
 
     # deconstruct the path and call nav to pose for each one
     def handle_path(self, path):
@@ -234,7 +239,7 @@ if __name__ == '__main__':
     print("make robot")
     r = Robot()
     rospy.sleep(1)  # make sure the robot has time to receive init values
-    while 1:
-        r.nav_to_point
+    while True:
+        r.nav_to_point()
 
     rospy.spin()
