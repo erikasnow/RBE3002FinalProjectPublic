@@ -3,7 +3,7 @@ from math import sqrt, pi, atan2
 import roslib
 import rospy
 import numpy as np
-from geometry_msgs.msg import PoseStamped, Pose, PoseWithCovariance, Twist, Quaternion
+from geometry_msgs.msg import PoseStamped, Pose, PoseWithCovariance, Twist, Quaternion, Point
 from nav_msgs.msg import Odometry, Path
 import tf
 from tf.transformations import euler_from_quaternion
@@ -19,16 +19,44 @@ class Robot:
         # we should be publishing the velocity and the goal pose, and receiving the current pose
         self.velPublisher = rospy.Publisher('cmd_vel', Twist, queue_size=1)
         self.odomSubscriber = rospy.Subscriber('odom', Odometry, self.odom_callback)
-        #self.rvizSubscriber = rospy.Subscriber('rviz_click', PoseStamped, self.nav_to_pose)
-        self.pathSubscriber = rospy.Subscriber('path', Path, self.handle_path)  # we should only bee publishing a pose to drive
-        #self.poseSubscriber = rospy.Subscriber('target', PoseStamped, self.astar_nav)  # this is what we eventually want
+        # self.rvizSubscriber = rospy.Subscriber('rviz_click', PoseStamped, self.nav_to_pose)
+        # self.pathSubscriber = rospy.Subscriber('path', Path, self.handle_path)
+        self.poseSubscriber = rospy.Subscriber('target', PoseStamped, self.set_target)
 
         self.px = 0
         self.py = 0
         self.roll = 0
         self.pitch = 0
         self.yaw = 0
+
+        # target point to travel to
+        self.target = Point()
         print("made it through init")
+
+    # set the global point that the robot should travel to
+    def set_target(self, pose):
+        print("")
+        print("target updated")
+        self.target = pose.pose.position  # we don't really care about the orientation of the robot, so no Quaternion
+
+    def nav_to_point(self):
+        print("")
+        print("entered nav function")
+
+        goalx = self.target.x
+        goaly = self.target.y
+
+        # rotate toward goal
+        currx = self.px
+        curry = self.py
+        deltax = goalx - currx
+        deltay = goaly - curry
+        angle = atan2(deltay, deltax)  # now have desired angle to rotate
+        self.rotate(angle)
+
+        # drive straight
+        distance = sqrt((deltax * deltax) + (deltay * deltay))
+        self.drive_straight(0.5, distance)
 
     # deconstruct the path and call nav to pose for each one
     def handle_path(self, path):
@@ -41,6 +69,7 @@ class Robot:
         path.poses.pop(0)
 
         for pose in path.poses:
+            print("")
             print(pose.pose)
             self.astar_nav(pose)
 
@@ -205,4 +234,7 @@ if __name__ == '__main__':
     print("make robot")
     r = Robot()
     rospy.sleep(1)  # make sure the robot has time to receive init values
+    while 1:
+        r.nav_to_point
+
     rospy.spin()
