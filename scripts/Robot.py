@@ -114,11 +114,13 @@ class Robot:
         starty = self.py
         startpos = sqrt((startx * startx) + (starty * starty))
 
+        threshold = 0.05
+
         currpos = sqrt((self.px * self.px) + (self.py * self.py))
         change = currpos - startpos
         currdist = abs(change)
         vel_msg = Twist()
-        while (currdist < distance):
+        while (threshold < (abs(distance - currdist))):  # see if this improves accuracy
             # start driving forward (i.e tell turtlebot to move at certain velocity -> publish a cmd_vel message)
             vel_msg.linear.x = speed
             vel_msg.linear.y = 0
@@ -136,6 +138,10 @@ class Robot:
 
         # stop when set distance has been achieved (i.e publish a cmd_vel message w/ all zeroes)
         vel_msg.linear.x = 0
+        print("Desired distance: " + str(distance))
+        print("Actual: " + str(currdist))
+        print("Error: " + str(abs(distance - currdist)))
+        print("")
         self.velPublisher.publish(vel_msg)
 
     def rotate(self, angle):
