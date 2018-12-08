@@ -70,10 +70,19 @@ class Planning:
 
     def find_nearest_frontier(self):
         """
-        Checks current map for nearest frontier and calls astar service to get path to it
-        :return:
+        Checks current map for nearest frontier and returns centroid of that frontier
+        :return: location of centroid
         """
         # TODO write this mess somehow
+        map = self.currmap
+        # we're looking at the -1s right?
+
+        # need to account for random single points that we don't want to travel to
+        # need a certain threshold for the centroid
+
+        # if there is no frontier, print that we've got the full map, and navigate back to the start location
+
+        # should this return a point or an index?
 
 
 if __name__ == '__main__':
