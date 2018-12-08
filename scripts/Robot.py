@@ -7,6 +7,7 @@ from geometry_msgs.msg import PoseStamped, Pose, PoseWithCovariance, Twist, Quat
 from nav_msgs.msg import Odometry, Path
 import tf
 from tf.transformations import euler_from_quaternion
+from std_msgs import Bool
 
 
 class Robot:
@@ -23,6 +24,10 @@ class Robot:
         # self.pathSubscriber = rospy.Subscriber('path', Path, self.handle_path)
         self.poseSubscriber = rospy.Subscriber('target', PoseStamped, self.set_target)
         self.poseSubscriberTest = rospy.Subscriber('test', Pose, self.set_target)
+
+        # need to publish a message to let know that the planning node can send the next point
+        # maybe this needs to be service instead? so that planning waits until it receives the message?
+        self.donePublisher = rospy.Publisher('done', PoseStamped, queue_size=1)
 
         self.px = 0
         self.py = 0
@@ -66,6 +71,8 @@ class Robot:
     def handle_move_to_target(self):
         if self.count < 2:
             self.nav_to_point()
+
+        self.donePublisher.publish(True)  # this may need to be a service? Not sure...
 
     # deconstruct the path and call nav to pose for each one
     def handle_path(self, path):
