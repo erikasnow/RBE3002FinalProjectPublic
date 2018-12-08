@@ -36,7 +36,7 @@ class Robot:
         self.yaw = 0
 
         # target point to travel to
-        self.target = Point()
+        self.target = PoseStamped()
         self.count = 0
         print("made it through init")
 
@@ -47,8 +47,8 @@ class Robot:
         self.target = pose.position  # we don't really care about the orientation of the robot, so no Quaternion
 
     def nav_to_point(self):
-        goalx = self.target.x
-        goaly = self.target.y
+        goalx = self.target.position.x
+        goaly = self.target.position.y
 
         # rotate toward goal
         currx = self.px
@@ -72,7 +72,7 @@ class Robot:
         if self.count < 2:
             self.nav_to_point()
 
-        self.donePublisher.publish(True)  # this may need to be a service? Not sure...
+        self.donePublisher.publish(self.target)  # this may need to be a service? Not sure...
 
     # deconstruct the path and call nav to pose for each one
     def handle_path(self, path):
