@@ -22,7 +22,7 @@ class Planning:
 
         # subscribes to astar path, scan map, and robot done message
         # is this actually how we need to subscribe to the astar service?
-        self.pathSubscriber = rospy.Subscriber('path', Path, self.handle_path)  # TODO write callback
+        self.pathSubscriber = rospy.Subscriber('path', Path, self.handle_path)
         self.mapSubscriber = rospy.Subscriber('newmap', OccupancyGrid, self.handle_map)
         # wait a sec... what if we had Robot publish the Pose it just finished moving to? That way we can double-check
         # and only send the next one when the message updates
@@ -39,7 +39,7 @@ class Planning:
         """
         Publishes the next PoseStamped, given the current map and path to goal
         :param msg: PoseStamped
-        :return: void
+        :return:
         """
         # I'm worried this could potentially write over a new path given by astar
 
@@ -68,6 +68,15 @@ class Planning:
         """
         self.currpath = msg
 
+    def find_nearest_frontier(self):
+        """
+        Checks current map for nearest frontier and calls astar service to get path to it
+        :return:
+        """
+        # TODO write this mess somehow
+
 
 if __name__ == '__main__':
-        rospy.spin()
+    print("make planner")
+    p = Planning()
+    rospy.spin()
