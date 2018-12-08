@@ -32,6 +32,7 @@ class Robot:
 
         # target point to travel to
         self.target = Point()
+        self.count = 0
         print("made it through init")
 
     # set the global point that the robot should travel to
@@ -50,15 +51,21 @@ class Robot:
         deltax = goalx - currx
         deltay = goaly - curry
 
-        threshold = 0.07
+        threshold = 0.15
 
-        if threshold < (abs(deltax)) or threshold < (abs(deltay)):
+        distance = sqrt((deltax * deltax) + (deltay * deltay))
+
+        if threshold < (abs(distance)):
+            print("change in dist: " + str(abs(distance)))
             angle = atan2(deltay, deltax)  # now have desired angle to rotate
             self.rotate(angle)
 
             # drive straight
-            distance = sqrt((deltax * deltax) + (deltay * deltay))
             self.drive_straight(0.5, distance)
+
+    def handle_move_to_target(self):
+        if self.count < 2:
+            self.nav_to_point()
 
     # deconstruct the path and call nav to pose for each one
     def handle_path(self, path):
@@ -194,11 +201,11 @@ class Robot:
             direction = 1  # if angle was position, move left
         """
 
-        threshold = 0.05  # allowed error in radians (5 degrees, currently)
+        threshold = 0.03  # allowed error in radians (1.7 degrees, currently)
 
         vel_msg = Twist()
         # move in that direction until you've rotated the total specified angle
-        while (threshold < abs(endangle-currangle)):
+        while threshold < abs(endangle-currangle):
             # start spinning robot in correct direction
             vel_msg.linear.x = 0
             vel_msg.linear.y = 0
@@ -236,7 +243,12 @@ if __name__ == '__main__':
     print("make robot")
     r = Robot()
     rospy.sleep(1)  # make sure the robot has time to receive init values
-    while True:
-        r.nav_to_point()
+    while True:  # maybe add in if target hasn't changed in a certain number of iterations?
+        goal = r.target
+        r.handle_move_to_target()
+        if goal == r.target:
+            r.count += 1
+        else:
+            r.count = 0
 
     rospy.spin()
