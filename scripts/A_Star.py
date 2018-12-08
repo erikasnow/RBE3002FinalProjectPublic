@@ -150,6 +150,7 @@ class A_Star:
             :param path: list of tuples
             :return: reduced list of tuples
         """
+        
         currx = path.poses[0].pose.position.x
         curry = path.poses[0].pose.position.y
 
