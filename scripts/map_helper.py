@@ -123,9 +123,9 @@ def index_to_point(index, my_map):
     """convert a index to a point"""
     width = my_map.info.width
     size = my_map.info.resolution
-    x = ((index % width) * size) + (size/4)
-    y = (((index - x) / width) * size) + (size/4)
-    point = convert_location((x, y),my_map)
+    x = ((index % width) * size) + size/2
+    y = (((index - (index % width)) / width) * size) + size/2
+    point = (x,y)
     return point
 
 
