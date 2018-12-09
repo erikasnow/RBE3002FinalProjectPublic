@@ -63,8 +63,13 @@ class A_Star:
             :return: list of tuples along the optimal path
         """
         print "processing path"
-        goal = round_point(goal)
-        start = round_point(start)
+        print "start: " + str(start)
+        print "goal: " + str(goal)
+        goal = point_to_index(round_point(goal),self.my_map)
+        start = point_to_index(round_point(start), self.my_map)
+        print "start index: " + str(start)
+        print "goal index: " + str(goal)
+
         frontier = PriorityQueue()
         came_from = {}
         cost_so_far = {}
@@ -76,14 +81,14 @@ class A_Star:
 
         while not frontier.empty():
             current = frontier.get()
-            if abs(current[0] - goal[0])<0.1 and abs(current[1]-goal[1] < 0.1):
-                came_from[goal] = current
+
+            if current == goal:
+                #came_from[goal] = current
                 break
 
-            wavefront = get_neighbors(current, self.my_map)
+            wavefront = get_neighbors(current, self.my_map, True)
 
             for next in wavefront:
-
                 # publish the frontier and explored cells to rviz for debugging
                 self.paint_frontier(frontier)
                 self.paint_explored(came_from)
@@ -91,7 +96,6 @@ class A_Star:
 
                 # find the total cost of going from start to next
                 cost = cost_so_far[current] + self.move_cost(current, next)
-
                 # if this is the first time exploring next, add it in
                 # or, if we just found a faster way to get to next, update it
                 if next not in cost_so_far or cost < cost_so_far[next]:
@@ -110,39 +114,40 @@ class A_Star:
         # reverse the path to put it in the right order
         path.reverse()
         print "path found"
+        print str(path)
         return path
 
-    def euclidean_heuristic(self, point1, point2):
+    def euclidean_heuristic(self, index1, index2):
         """
             calculate the dist between two points
-            :param point1: tuple of location
-            :param point2: tuple of location
+            :param index1: index of cell in occupancy grid
+            :param index2: index of cell in occupancy grid
             :return: Euclidean distance between two points
         """
-        x1, y1 = point1
-        x2, y2 = point2
+        x1,y1 = index_to_point(index1,self.my_map)
+        x2,y2 = index_to_point(index2,self.my_map)
 
-        xdelta = abs(x2 - x1)
-        ydelta = abs(y2 - y1)
+        xdist = abs(x2 - x1)
+        ydist = abs(y2 - y1)
 
-        dist = sqrt((xdelta * xdelta) + (ydelta * ydelta))
+        dist = sqrt(pow(xdist,2) + pow(ydist,2))
         return dist
 
-    def move_cost(self, point1, point2):
+    def move_cost(self, index1, index2):
         """
             calculate the Manhattan distance between two points
-            :param point1: tuple of location
-            :param point2: tuple of location
+            :param index1: tuple of location
+            :param index2: tuple of location
             :return: Manhattan distance between two points
         """
-        x1, y1 = point1
-        x2, y2 = point2
+        map_width = self.my_map.info.width
+        x1,y1 = index_to_point(index1,self.my_map)
+        x2,y2 = index_to_point(index2,self.my_map)
 
-        xdelta = abs(x2 - x1)
-        ydelta = abs(y2 - y1)
-
-        dist = xdelta + ydelta
-        return dist
+        y = abs(y1 - y2)
+        x = abs(x1 - x2)
+        cost = sqrt(pow(x,2) + pow(y,2))
+        return cost
 
     def optimize_path(self, path):
         """
@@ -150,63 +155,28 @@ class A_Star:
             :param path: list of tuples
             :return: reduced list of tuples
         """
-        
-        currx = path.poses[0].pose.position.x
-        curry = path.poses[0].pose.position.y
-
-        xflag = False
-        yflag = False  # need to figure out how to initialize this
-
         newpath = Path()
         newpath.header.frame_id = 'map'
-        newpath.poses.append(path.poses[0])  # add first node to cleaned path
 
-        initpose = PoseStamped()
+        pose_list = path.poses
+        prev_del_x = 0
+        prev_del_y = 0
 
-        newpath.poses.append(initpose)  # initialize the next node in list
+        for index in range(len(pose_list)):
+            if index == 0:
+                newpath.poses.append(pose_list[index])
+            elif index == pose_list.index(pose_list[-1]):
+                newpath.poses.append(pose_list[-1])
+                break
+            else:
+                del_x = abs(pose_list[index].pose.position.x - pose_list[index + 1].pose.position.x)
+                del_y = abs(pose_list[index].pose.position.y - pose_list[index + 1].pose.position.y)
 
-        if(currx == path.poses[1].pose.position.x):
-            xflag = True
-        else:
-            yflag = True
+                if del_x != prev_del_x or del_y != prev_del_y:
+                    newpath.poses.append(pose_list[index])
 
-        path.poses.pop(0)  # get rid of first node
-
-        for pose in path.poses:
-            if(xflag):
-                curry = pose.pose.position.y
-                if(currx != pose.pose.position.x):
-                    xflag = False
-                    yflag = True
-
-                    newpath.poses[-1].pose.position.x = currx
-                    newpath.poses[-1].pose.position.y = curry
-
-                    currx = pose.pose.position.x  # make sure these are on the right node
-                    curry = pose.pose.position.y
-
-                    newpose = PoseStamped()
-                    newpath.poses.append(newpose)
-
-            elif(yflag):
-                currx = pose.pose.position.x
-                if(curry != pose.pose.position.y):
-                    xflag = True
-                    yflag = False
-
-                    newpath.poses[-1].pose.position.x = currx
-                    newpath.poses[-1].pose.position.y = curry
-
-                    currx = pose.pose.position.x  # make sure these are on the right node
-                    curry = pose.pose.position.y
-
-                    newpose = PoseStamped()
-                    newpath.poses.append(newpose)
-
-        # make sure to reach the goal node
-        newpath.poses[-1].pose.position.x = path.poses[-1].pose.position.x
-        newpath.poses[-1].pose.position.y = path.poses[-1].pose.position.y
-
+                prev_del_x = del_x
+                prev_del_y = del_y
         return newpath
 
     def paint_frontier(self, frontier):
@@ -216,7 +186,6 @@ class A_Star:
             :return:
         """
         frontier_elements = map(lambda foo: foo[1], frontier.elements)
-
         frontier_cells = GridCells()
         frontier_cells.cell_width = self.my_map.info.resolution
         frontier_cells.cell_height = self.my_map.info.resolution
@@ -225,10 +194,11 @@ class A_Star:
 
         for cell in frontier_elements:
             cell_as_point = Point()
-            cell_as_point.x = map_to_world(cell, self.my_map)[0]
-            cell_as_point.y = map_to_world(cell, self.my_map)[1]
+            cell = index_to_point(cell, self.my_map)
+            world_pt = map_to_world(cell, self.my_map)
+            cell_as_point.x = world_pt[0]
+            cell_as_point.y = world_pt[1]
             frontier_cells.cells.append(cell_as_point)
-
         self.frontierPublisher.publish(frontier_cells)
 
     def paint_explored(self, came_from):
@@ -238,6 +208,7 @@ class A_Star:
             :param came_from: came_from dictionary used by A*
             :return:
         """
+
         explored_cells = GridCells()
         explored_cells.cell_width = self.my_map.info.resolution
         explored_cells.cell_height = self.my_map.info.resolution
@@ -246,8 +217,10 @@ class A_Star:
 
         for cell in came_from:
             cell_as_point = Point()
-            cell_as_point.x = map_to_world(cell, self.my_map)[0]
-            cell_as_point.y = map_to_world(cell, self.my_map)[1]
+            cell = index_to_point(cell, self.my_map)
+            world_pt = map_to_world(cell, self.my_map)
+            cell_as_point.x = world_pt[0]
+            cell_as_point.y = world_pt[1]
             explored_cells.cells.append(cell_as_point)
 
         self.exploredPublisher.publish(explored_cells)
@@ -263,24 +236,24 @@ class A_Star:
         path.header.frame_id = 'map'
 
         # copy all the points as PoseStamped() into the path
-        for point in points:
+        for index in points:
 
             # get the real-world coordinates of the point relative to the
             # origin of the map, from the tuple of grid coordinates A* returns
-            world_x, world_y = map_to_world(point, self.my_map)
-
+            point = index_to_point(index,self.my_map)
+            world_pt = map_to_world(point, self.my_map)
+            #world_pt = round_point((world_x,world_y))
             # make a PoseStamped at the real-world coordinates of the point
             # currently has the orientation set to the default, to be ignored
             pose = PoseStamped()
-            pose.pose.position.x = world_x
-            pose.pose.position.y = world_y
+            pose.pose.position.x = world_pt[0]
+            pose.pose.position.y = world_pt[1]
 
             # append the new pose to the list of poses that make up the path
             path.poses.append(pose)
-
         newpath = self.optimize_path(path)
         return newpath
-
+        #return path
 
 if __name__ == '__main__':
     alg = A_Star()
