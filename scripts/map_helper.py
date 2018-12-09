@@ -7,15 +7,18 @@ from math import *
 import tf
 
 
-def get_neighbors(index, my_map):
+def get_neighbors(index, my_map, is_eight_con):
     """
         returns the legal neighbors of loc for a 4-connected robot
         :param loc: tuple of location
+        :param my_map: the occupancy grid data structure
+        :param is_eight_con: boolean if planning is eight or four connected
         :return: list of tuples
     """
     neighbors = []
 
     map_width = my_map.info.width
+
 
     up = index + map_width
     down = index - map_width
@@ -30,6 +33,21 @@ def get_neighbors(index, my_map):
         neighbors.append(left)
     if is_valid_loc(right, my_map):
         neighbors.append(right)
+
+    if is_eight_con:
+        up_right = index + 1 + map_width
+        up_left = index - 1 + map_width
+        down_right = index + 1 - map_width
+        down_left = index - 1 - map_width
+
+        if is_valid_loc(up_right, my_map):
+            neighbors.append(up_right)
+        if is_valid_loc(up_left, my_map):
+            neighbors.append(up_left)
+        if is_valid_loc(down_right, my_map):
+            neighbors.append(down_right)
+        if is_valid_loc(down_left, my_map):
+            neighbors.append(down_left)
 
     return neighbors
 

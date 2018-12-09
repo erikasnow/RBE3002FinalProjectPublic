@@ -86,13 +86,13 @@ class A_Star:
                 #came_from[goal] = current
                 break
 
-            wavefront = get_neighbors(current, self.my_map)
+            wavefront = get_neighbors(current, self.my_map, True)
 
             for next in wavefront:
                 # publish the frontier and explored cells to rviz for debugging
                 self.paint_frontier(frontier)
                 self.paint_explored(came_from)
-                #rospy.sleep(0.01)
+                rospy.sleep(0.01)
 
                 # find the total cost of going from start to next
                 cost = cost_so_far[current] + self.move_cost(current, next)
@@ -155,62 +155,28 @@ class A_Star:
             :param path: list of tuples
             :return: reduced list of tuples
         """
-        currx = path.poses[0].pose.position.x
-        curry = path.poses[0].pose.position.y
-
-        xflag = False
-        yflag = False  # need to figure out how to initialize this
-
         newpath = Path()
         newpath.header.frame_id = 'map'
-        newpath.poses.append(path.poses[0])  # add first node to cleaned path
 
-        initpose = PoseStamped()
+        pose_list = path.poses
+        prev_del_x = 0
+        prev_del_y = 0
 
-        newpath.poses.append(initpose)  # initialize the next node in list
+        for index in range(len(pose_list)):
+            if index == 0:
+                newpath.poses.append(pose_list[index])
+            elif index == pose_list.index(pose_list[-1]):
+                newpath.poses.append(pose_list[-1])
+                break
+            else:
+                del_x = abs(pose_list[index].pose.position.x - pose_list[index + 1].pose.position.x)
+                del_y = abs(pose_list[index].pose.position.y - pose_list[index + 1].pose.position.y)
 
-        if(currx == path.poses[1].pose.position.x):
-            xflag = True
-        else:
-            yflag = True
+                if del_x != prev_del_x or del_y != prev_del_y:
+                    newpath.poses.append(pose_list[index])
 
-        path.poses.pop(0)  # get rid of first node
-
-        for pose in path.poses:
-            if(xflag):
-                curry = pose.pose.position.y
-                if(currx != pose.pose.position.x):
-                    xflag = False
-                    yflag = True
-
-                    newpath.poses[-1].pose.position.x = currx
-                    newpath.poses[-1].pose.position.y = curry
-
-                    currx = pose.pose.position.x  # make sure these are on the right node
-                    curry = pose.pose.position.y
-
-                    newpose = PoseStamped()
-                    newpath.poses.append(newpose)
-
-            elif(yflag):
-                currx = pose.pose.position.x
-                if(curry != pose.pose.position.y):
-                    xflag = True
-                    yflag = False
-
-                    newpath.poses[-1].pose.position.x = currx
-                    newpath.poses[-1].pose.position.y = curry
-
-                    currx = pose.pose.position.x  # make sure these are on the right node
-                    curry = pose.pose.position.y
-
-                    newpose = PoseStamped()
-                    newpath.poses.append(newpose)
-
-        # make sure to reach the goal node
-        newpath.poses[-1].pose.position.x = path.poses[-1].pose.position.x
-        newpath.poses[-1].pose.position.y = path.poses[-1].pose.position.y
-
+                prev_del_x = del_x
+                prev_del_y = del_y
         return newpath
 
     def paint_frontier(self, frontier):
@@ -233,7 +199,6 @@ class A_Star:
             cell_as_point.x = world_pt[0]
             cell_as_point.y = world_pt[1]
             frontier_cells.cells.append(cell_as_point)
-        #print "Frontier cells: " + str(frontier_cells.cells)
         self.frontierPublisher.publish(frontier_cells)
 
     def paint_explored(self, came_from):
@@ -276,8 +241,8 @@ class A_Star:
             # get the real-world coordinates of the point relative to the
             # origin of the map, from the tuple of grid coordinates A* returns
             point = index_to_point(index,self.my_map)
-            world_x, world_y = map_to_world(point, self.my_map)
-            world_pt = round_point((world_x,world_y))
+            world_pt = map_to_world(point, self.my_map)
+            #world_pt = round_point((world_x,world_y))
             # make a PoseStamped at the real-world coordinates of the point
             # currently has the orientation set to the default, to be ignored
             pose = PoseStamped()
@@ -288,7 +253,7 @@ class A_Star:
             path.poses.append(pose)
         newpath = self.optimize_path(path)
         return newpath
-
+        #return path
 
 if __name__ == '__main__':
     alg = A_Star()

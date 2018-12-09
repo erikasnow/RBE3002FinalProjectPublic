@@ -42,7 +42,7 @@ class Robot:
         path.poses.pop(0)
 
         for pose in path.poses:
-            print(pose.pose)
+            #print(pose.pose)
             #self.nav_to_pose(pose)
             self.astar_nav(pose)
 
@@ -50,8 +50,8 @@ class Robot:
         print("end of handle_path")
 
     def astar_nav(self, goal):
-        print("")
-        print("entered astar_nav")
+        #print("")
+        #print("entered astar_nav")
 
         goalx = goal.pose.position.x
         goaly = goal.pose.position.y
@@ -79,8 +79,8 @@ class Robot:
         :param goal: PoseStamped
         :return:
         """
-        print("")
-        print("entered nav_to_pose")
+        #print("")
+        #print("entered nav_to_pose")
 
         goalx = goal.pose.position.x
         goaly = goal.pose.position.y
@@ -113,7 +113,7 @@ class Robot:
         :param distance: distance to drive
         :return:
         """
-        print("entered drive_straight")
+        #print("entered drive_straight")
         # set initial position
         startx = self.px
         starty = self.py
@@ -150,7 +150,7 @@ class Robot:
         :param angle: angle to rotate
         :return:
         """
-        print("entered rotate")
+        #print("entered rotate")
         # set initial position
         currangle = self.yaw % (2 * pi)  # get rid of gross pi/ -pi thing
         endangle = (currangle + angle) % (2 * pi)
