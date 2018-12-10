@@ -9,6 +9,7 @@ import tf
 from tf.transformations import euler_from_quaternion
 import std_msgs
 from std_msgs import Bool
+from map_helper import *
 
 
 class Planning:
@@ -27,6 +28,7 @@ class Planning:
         # wait a sec... what if we had Robot publish the Pose it just finished moving to? That way we can double-check
         # and only send the next one when the message updates
         self.doneSubscriber = rospy.Subscriber('done', PoseStamped, self.handle_done)
+        self.odomSubscriber = rospy.Subscriber('odom', Odometry, self.handle_odom)
 
         # publishes waypoint from astar path
         self.wayptPublisher = rospy.Publisher('target', PoseStamped, queue_size=1)
@@ -34,6 +36,8 @@ class Planning:
         # global variables (these will be updated in callbacks)
         self.currmap = OccupancyGrid()
         self.currpath = Path()
+        self.px = 0
+        self.py = 0
 
     def handle_done(self, msg):
         """
@@ -68,21 +72,64 @@ class Planning:
         """
         self.currpath = msg
 
+    def handle_odom(self, msg):
+        """
+        Updates the current location of the robot
+        :param msg: Odom
+        :return:
+        """
+        self.px = msg.pose.pose.position.x
+        self.py = msg.pose.pose.position.y
+
     def find_nearest_frontier(self):
         """
         Checks current map for nearest frontier and returns centroid of that frontier
-        :return: location of centroid
+        :return: location of nearest frontier cell
         """
-        # TODO write this mess somehow
+        # TODO test somehow
         map = self.currmap
-        # we're looking at the -1s right?
+        nearest_index = -1
+        nearest_distance = -1
+        robotx = self.px
+        roboty = self.py
 
-        # need to account for random single points that we don't want to travel to
-        # need a certain threshold for the centroid
+        robotx, roboty = convert_location({robotx, roboty}, map)
 
         # if there is no frontier, print that we've got the full map, and navigate back to the start location
 
         # should this return a point or an index?
+        for cell in map.data:
+            index = map.data.index(cell)
+            no_wall = True
+            width = int(map.info.width)
+
+            up = index + width  # I think the grid starts from bottom left
+            down = index - width  # I think the grid starts from bottom left
+            left = index - 1
+            right = index + 1
+
+            # don't go to any location next to a wall
+            if map.data[up] > 50:
+                no_wall = False
+            if map.data[down] > 50:
+                no_wall = False
+            if map.data[left] > 50:
+                no_wall = False
+            if map.data[right] > 50:
+                no_wall = False
+
+            if cell == -1 and no_wall:
+                ix, iy = index_to_point(map.data.index(cell), map)
+                deltax = abs(ix - robotx)
+                deltay = abs(iy - roboty)
+                dist = sqrt((deltax * deltax) + (deltay * deltay))
+                if nearest_distance == -1 or dist < nearest_distance:
+                    # replace values
+                    nearest_index = map.data.index(cell)
+                    nearest_distance = dist
+        if nearest_index == -1:
+            print("map is complete")
+        return nearest_index
 
 
 if __name__ == '__main__':
