@@ -42,7 +42,15 @@
   </node>
 
   <node name="astar" pkg="rbe3002code02" type="A_Star.py" output ="screen"/>
-  <node name="main" pkg="rbe3002code02" type="main.py" output="screen"/>
-  <node name="Robot" pkg="rbe3002code02" type="Robot.py" output="screen"/>
+
+  <node name="main" pkg="rbe3002code02" type="main.py" output="screen">
+    <param name="x_pos" value="$(arg x_pos)" />
+    <param name="y_pos" value="$(arg x_pos)" />
+  </node>
+
+  <node name="Robot" pkg="rbe3002code02" type="Robot.py" output="screen">
+    <param name="x_pos" value="$(arg x_pos)" />
+    <param name="y_pos" value="$(arg x_pos)" />
+  </node>
 
 </launch>

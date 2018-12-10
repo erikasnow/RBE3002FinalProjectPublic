@@ -92,6 +92,8 @@ if __name__ == '__main__':
 
 
     start_pose = PoseStamped()
+    start_pose.pose.position.x = rospy.get_param('~x_pos', 0.0) # get the initialization location from the launch file
+    start_pose.pose.position.y = rospy.get_param('~y_pos', 0.0)
 
     # occupancy grid for the map data
     my_map = None

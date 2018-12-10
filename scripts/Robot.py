@@ -24,14 +24,16 @@ class Robot:
         self.poseSubscriber = rospy.Subscriber('target', PoseStamped, self.set_target)
         self.poseSubscriberTest = rospy.Subscriber('test', Pose, self.set_target)
 
-        self.px = 0
-        self.py = 0
+        self.px = rospy.get_param('~x_pos', 0) # get the initialization location from the launch file
+        self.py = rospy.get_param('~x_pos', 0)
         self.roll = 0
         self.pitch = 0
         self.yaw = 0
 
         # target point to travel to
         self.target = Point()
+        self.target.x = rospy.get_param('~x_pos', 0.0) # get the initialization location from the launch file
+        self.target.y = rospy.get_param('~y_pos', 0.0)
         self.count = 0
         print("made it through init")
 
