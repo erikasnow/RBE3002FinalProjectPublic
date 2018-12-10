@@ -7,46 +7,57 @@ from math import *
 import tf
 
 
-def get_neighbors(loc, my_map):
+def get_neighbors(index, my_map, is_eight_con):
     """
         returns the legal neighbors of loc for a 4-connected robot
         :param loc: tuple of location
+        :param my_map: the occupancy grid data structure
+        :param is_eight_con: boolean if planning is eight or four connected
         :return: list of tuples
     """
     neighbors = []
 
-    cell_step = my_map.info.resolution
+    map_width = my_map.info.width
 
-    up = (loc[0], loc[1] + cell_step)
-    down = (loc[0], loc[1] - cell_step)
-    left = (loc[0] - cell_step, loc[1])
-    right =(loc[0] + cell_step, loc[1])
+
+    up = index + map_width
+    down = index - map_width
+    left = index - 1
+    right = index + 1
 
     if is_valid_loc(up, my_map):
-        up = round_point(up)
         neighbors.append(up)
     if is_valid_loc(down, my_map):
-        down = round_point(down)
         neighbors.append(down)
     if is_valid_loc(left, my_map):
-        left = round_point(left)
         neighbors.append(left)
     if is_valid_loc(right, my_map):
-        right = round_point(right)
         neighbors.append(right)
+
+    if is_eight_con:
+        up_right = index + 1 + map_width
+        up_left = index - 1 + map_width
+        down_right = index + 1 - map_width
+        down_left = index - 1 - map_width
+
+        if is_valid_loc(up_right, my_map):
+            neighbors.append(up_right)
+        if is_valid_loc(up_left, my_map):
+            neighbors.append(up_left)
+        if is_valid_loc(down_right, my_map):
+            neighbors.append(down_right)
+        if is_valid_loc(down_left, my_map):
+            neighbors.append(down_left)
 
     return neighbors
 
 
-def is_valid_loc(loc, my_map):
+def is_valid_loc(index, my_map):
     """
         Gets if a point is a legal location
         :param loc: tuple of location
         :return: boolean is a legal point
     """
-    loc = convert_location(loc, my_map)
-    index = point_to_index(loc, my_map)
-
     if (my_map.data[index] == 100 or my_map.data[index] == -1):
         return False
     else:
@@ -129,9 +140,10 @@ def to_poses(points, my_map):
 def index_to_point(index, my_map):
     """convert a index to a point"""
     width = my_map.info.width
-    x = index % width
-    y = (index - x) / width
-    point = (x, y)
+    size = my_map.info.resolution
+    x = ((index % width) * size) + size/2
+    y = (((index - (index % width)) / width) * size) + size/2
+    point = (x,y)
     return point
 
 
