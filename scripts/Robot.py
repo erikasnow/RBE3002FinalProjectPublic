@@ -176,6 +176,9 @@ class Robot:
             change = currpos - startpos
             currdist = abs(change)
 
+            if rospy.is_shutdown(): # end the code nicely if shut down
+                break
+
         # stop when set distance has been achieved (i.e publish a cmd_vel message w/ all zeroes)
         vel_msg.linear.x = 0
         print("Desired distance: " + str(distance))
@@ -220,6 +223,9 @@ class Robot:
             # update the current angle
             currangle = self.yaw % (2 * pi)  # get rid of gross pi/ -pi thing
 
+            if rospy.is_shutdown(): # end the code nicely if shut down
+                break
+
         # stop at desired angle
         vel_msg.angular.z = 0
         self.velPublisher.publish(vel_msg)
@@ -252,5 +258,8 @@ if __name__ == '__main__':
             r.count += 1
         else:
             r.count = 0
+        
+        if rospy.is_shutdown(): # end the code nicely if shut down
+            break
 
     rospy.spin()
