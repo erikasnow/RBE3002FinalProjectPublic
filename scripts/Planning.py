@@ -8,7 +8,6 @@ from nav_msgs.msg import Odometry, Path, GridCells
 import tf
 from tf.transformations import euler_from_quaternion
 import std_msgs
-from std_msgs import Bool
 from map_helper import *
 
 
@@ -95,8 +94,6 @@ class Planning:
 
         robotx, roboty = convert_location({robotx, roboty}, map)
 
-        # if there is no frontier, print that we've got the full map, and navigate back to the start location
-
         # should this return a point or an index?
         for cell in map.data:
             index = map.data.index(cell)
@@ -127,6 +124,8 @@ class Planning:
                     # replace values
                     nearest_index = map.data.index(cell)
                     nearest_distance = dist
+
+        # if there is no frontier, print that we've got the full map, and navigate back to the start location
         if nearest_index == -1:
             print("map is complete")
         return nearest_index
