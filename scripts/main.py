@@ -3,6 +3,7 @@ import rospy
 import sys
 from map_helper import *
 from nav_msgs.srv import GetPlan, GetPlanResponse
+from nav_msgs.msg import Odometry
 
 
 def process_pose_message(msg, x_position, y_position):
@@ -76,6 +77,7 @@ def handle_goal(msg):
         response = astar_service(start_pose, goal_pose, 0.1)
         path = response.plan
         pathPublisher.publish(path)
+        targetPublisher.publish(path.poses[1].pose)
     except rospy.ServiceException, e:
         print "\nA* service call failed:\n" + str(e)
 
@@ -85,14 +87,29 @@ def handle_map_updates(msg):
     my_map = msg
 
 
+# grabs pose of the turtlebot
+def odom_callback(msg):
+    """
+    update the state of the robot
+    :type msg: Odom
+    :return:
+    """
+    global start_pose
+    start_pose.pose.position.x = msg.pose.pose.position.x
+    start_pose.pose.position.y = msg.pose.pose.position.y
+    #quat = msg.pose.pose.orientation
+    #q = [quat.x, quat.y, quat.z, quat.w]
+    #self.roll, self.pitch, self.yaw = euler_from_quaternion(q)
+
+
 if __name__ == '__main__':
 
     rospy.init_node("main")
     print "main node initialized"
 
-
+    # variable to store the robot's location, initialized from launch file
     start_pose = PoseStamped()
-    start_pose.pose.position.x = rospy.get_param('~x_pos', 0.0) # get the initialization location from the launch file
+    start_pose.pose.position.x = rospy.get_param('~x_pos', 0.0)
     start_pose.pose.position.y = rospy.get_param('~y_pos', 0.0)
 
     # occupancy grid for the map data
@@ -103,12 +120,18 @@ if __name__ == '__main__':
     start_pose_subscriber = rospy.Subscriber('initialpose', PoseWithCovarianceStamped, handle_start_pose)
     goal_subscriber = rospy.Subscriber('move_base_simple/goal', PoseStamped, handle_goal)
 
+    # subscribe to odom updates to update the start cell
+    odomSubscriber = rospy.Subscriber('odom', Odometry, odom_callback)
+
     # publish start and goal cells
     initPublisher = rospy.Publisher('initcell', GridCells, queue_size=1)
     goalPublisher = rospy.Publisher('goalcell', GridCells, queue_size=1)
 
     # publish the optimal path
     pathPublisher = rospy.Publisher('path', Path, queue_size=1)
+
+    # publish the navigation target
+    targetPublisher = rospy.Publisher('target', Pose, queue_size=1)
 
     print "waiting for A* service"
     rospy.wait_for_service('astar')

@@ -49,6 +49,9 @@
   </node>
 
   <node name="Robot" pkg="rbe3002code02" type="Robot.py" output="screen">
+    <param name="dist_threshold" value="0.01" />
+    <param name="rotate_threshold" value="0.01" />
+    <param name="drive_threshold" value="0.01" />
     <param name="x_pos" value="$(arg x_pos)" />
     <param name="y_pos" value="$(arg x_pos)" />
   </node>

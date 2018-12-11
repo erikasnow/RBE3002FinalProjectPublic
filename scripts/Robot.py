@@ -21,8 +21,7 @@ class Robot:
         self.odomSubscriber = rospy.Subscriber('odom', Odometry, self.odom_callback)
         # self.rvizSubscriber = rospy.Subscriber('rviz_click', PoseStamped, self.nav_to_pose)
         # self.pathSubscriber = rospy.Subscriber('path', Path, self.handle_path)
-        self.poseSubscriber = rospy.Subscriber('target', PoseStamped, self.set_target)
-        self.poseSubscriberTest = rospy.Subscriber('test', Pose, self.set_target)
+        self.poseSubscriber = rospy.Subscriber('target', Pose, self.set_target)
 
         self.px = rospy.get_param('~x_pos', 0) # get the initialization location from the launch file
         self.py = rospy.get_param('~x_pos', 0)
@@ -35,34 +34,32 @@ class Robot:
         self.target.x = rospy.get_param('~x_pos', 0.0) # get the initialization location from the launch file
         self.target.y = rospy.get_param('~y_pos', 0.0)
         self.count = 0
-        print("made it through init")
+        print("Robot initialized")
 
     # set the global point that the robot should travel to
-    def set_target(self, pose):
-        print("")
-        print("target updated")
-        self.target = pose.position  # we don't really care about the orientation of the robot, so no Quaternion
+    # then, start navigating towards it
+    def set_target(self, target_pose):
+        self.target = target_pose.position  # drop orientation, we don't use it
+        print("\n" + "navigation target updated:\n" + str(self.target))
+        self.nav_to_point()
 
     def nav_to_point(self):
         goalx = self.target.x
         goaly = self.target.y
-
-        # rotate toward goal
         currx = self.px
         curry = self.py
+
         deltax = goalx - currx
         deltay = goaly - curry
 
-        threshold = 0.15
+        threshold = rospy.get_param('~dist_threshold', 0.15)
 
         distance = sqrt((deltax * deltax) + (deltay * deltay))
+        print "in nav_to_point, distance to target is: " + str(distance)
 
-        if threshold < (abs(distance)):
-            print("change in dist: " + str(abs(distance)))
-            angle = atan2(deltay, deltax)  # now have desired angle to rotate
+        if threshold < abs(distance):
+            angle = atan2(deltay, deltax)
             self.rotate(angle)
-
-            # drive straight
             self.drive_straight(0.5, distance)
 
     def handle_move_to_target(self):
@@ -154,7 +151,7 @@ class Robot:
         starty = self.py
         startpos = sqrt((startx * startx) + (starty * starty))
 
-        threshold = 0.05
+        threshold = rospy.get_param('~drive_threshold', 0.05)
 
         currpos = sqrt((self.px * self.px) + (self.py * self.py))
         change = currpos - startpos
@@ -181,6 +178,7 @@ class Robot:
 
         # stop when set distance has been achieved (i.e publish a cmd_vel message w/ all zeroes)
         vel_msg.linear.x = 0
+        print("\n" + "finished driving")
         print("Desired distance: " + str(distance))
         print("Actual: " + str(currdist))
         print("Error: " + str(abs(distance - currdist)))
@@ -206,7 +204,7 @@ class Robot:
             direction = 1  # if angle was position, move left
         """
 
-        threshold = 0.03  # allowed error in radians (1.7 degrees, currently)
+        threshold = rospy.get_param('~rotate_threshold', 0.03)
 
         vel_msg = Twist()
         # move in that direction until you've rotated the total specified angle
@@ -229,6 +227,7 @@ class Robot:
         # stop at desired angle
         vel_msg.angular.z = 0
         self.velPublisher.publish(vel_msg)
+        print("\n" + "finished rotating")
         print("Desired angle: " + str(endangle))
         print("Actual: " + str(currangle))
         print("Error: " + str(abs(endangle - currangle)))
@@ -251,15 +250,5 @@ if __name__ == '__main__':
     print("make robot")
     r = Robot()
     rospy.sleep(1)  # make sure the robot has time to receive init values
-    while True:  # maybe add in if target hasn't changed in a certain number of iterations?
-        goal = r.target
-        r.handle_move_to_target()
-        if goal == r.target:
-            r.count += 1
-        else:
-            r.count = 0
-        
-        if rospy.is_shutdown(): # end the code nicely if shut down
-            break
 
     rospy.spin()
