@@ -76,30 +76,32 @@ class Robot:
         :param distance_to_travel: distance to be traveled
         :return:
         """
-        # set starting and target positions, and the distance driven so far
-        start_pos = sqrt((self.px * self.px) + (self.py * self.py))
-        curr_pos = start_pos
-        distance_driven = abs(curr_pos - start_pos)
+        # set starting and current positions, and the distance driven so far
+        start_x = self.px
+        start_y = self.py
+#        curr_x = start_x
+#        curr_y = start_y
+        distance_driven = 0.0 #sqrt((start_y - curr_y)**2 + (start_x - curr_x)**2)
+
+        # print debugging information
+        print("\n" + "entered drive_straight")
+        print("starting location: (" + str(start_x) + " , " + str(start_y) + ")")
+        print("distance to travel: " + str(distance_to_travel))
 
         # make a twist message to command the robot at the launch file's speed
         vel_msg = Twist()
         vel_msg.linear.x = rospy.get_param('~drive_speed', 0.1)
 
-        # print debugging information
-        print("\n" + "entered drive_straight")
-        print("starting location is:\n" + str(start_pos))
-        print("target location is:\n" + str(curr_pos))
-
         # get the tolerance from the launch file, drive until within tolerance
-        tolerance = rospy.get_param('~drive_threshold', 0.05)
+        tolerance = rospy.get_param('~drive_tolerance', 0.05)
         while tolerance < abs(distance_to_travel - distance_driven):
 
             #publish driving command
             self.velPublisher.publish(vel_msg)
 
             # calculate the distance the robot has driven so far
-            currpos = sqrt((self.px * self.px) + (self.py * self.py))
-            distance_driven = abs(curr_pos - start_pos)
+#            currpos = sqrt((self.px * self.px) + (self.py * self.py))
+            distance_driven = sqrt((start_y - self.py)**2 + (start_x - self.px)**2)
 
             # end the code nicely if shut down
             if rospy.is_shutdown():
@@ -109,8 +111,8 @@ class Robot:
         vel_msg = Twist()
         self.velPublisher.publish(vel_msg)
         print("\n" + "finished driving")
-        print("Desired distance: " + str(distance))
-        print("Actual: " + str(currdist))
+        print("Desired distance: " + str(distance_to_travel))
+        print("Actual: " + str(distance_driven))
         print("Error: " + str(abs(distance_to_travel - distance_driven)) + "\n\n")
 
 
@@ -120,37 +122,29 @@ class Robot:
         :param angle: angle to rotate
         :return:
         """
-        # set initial position
-        currangle = self.yaw % (2 * pi)  # get rid of gross pi/ -pi thing
-        endangle = (currangle + angle) % (2 * pi)
-
-        threshold = rospy.get_param('~rotate_threshold', 0.03)
+        # print debugging information
+        print("\n" + "entered rotate")
+        print "target angle is:\t" + str(angle)
+        print "current yaw is:\t" + str(self.yaw)
 
         # make a twist message to command the robot to turn
         vel_msg = Twist()
         vel_msg.angular.z = rospy.get_param('~rotate_speed', 0.15)
+        if angle < 0: # if it would be easier to turn the other way, change sign
+            vel_msg.angular.z = -vel_msg.angular.z
 
-        # print debugging information
-        print("\n" + "entered rotate")
-        print("starting angle is: " + str(currangle))
-        print("target angle is: " + str(endangle))
-
-        # move in that direction until you've rotated the total specified angle
-        while threshold < abs(endangle - currangle):
+        # rotate in that direction to within tolerance of the specified angle
+        tolerance = rospy.get_param('~rotate_tolerance', 0.03)
+        while abs(self.yaw - angle) > tolerance and not rospy.is_shutdown():
             self.velPublisher.publish(vel_msg)
-            currangle = self.yaw % (2 * pi)  # get rid of gross pi/ -pi thing
-
-            # end the code nicely if shut down
-            if rospy.is_shutdown():
-                break
 
         # stop rotating
         vel_msg.angular.z = 0
         self.velPublisher.publish(vel_msg)
         print("\n" + "finished rotating")
-        print("Desired angle: " + str(endangle))
-        print("Actual: " + str(currangle))
-        print("Error: " + str(abs(endangle - currangle)))
+        print("Desired angle: " + str(angle))
+        print("Actual: " + str(self.yaw))
+        print("Error: " + str(abs(angle - self.yaw)))
 
 
     # receive updates for the pose of the turtlebot

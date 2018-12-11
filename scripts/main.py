@@ -78,6 +78,7 @@ def handle_goal(msg):
         path = response.plan
         pathPublisher.publish(path)
         targetPublisher.publish(path.poses[1].pose)
+        print "navigation target set to:\n" + str(path.poses[1].pose.position)
     except rospy.ServiceException, e:
         print "\nA* service call failed:\n" + str(e)
 

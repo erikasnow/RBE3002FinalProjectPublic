@@ -33,10 +33,10 @@
     <!-- <param name="maxUrange" value="3.4" /> -->  <!-- def: 80.0 -->
     <!-- <param name="maxRange" value="3.6" /> -->  <!-- no default -->
     <!-- defines map size (in meters) -->
-    <param name="xmin" value="-100.0" /> <!-- def: -100.0 -->
-    <param name="ymin" value="-100.0" /> <!-- def: -100.0 -->
-    <param name="xmax" value="100.0" /> <!-- def: 100.0 -->
-    <param name="ymax" value="100.0" /> <!-- def: 100.0 -->
+    <param name="xmin" value="-10.0" /> <!-- def: -100.0 -->
+    <param name="ymin" value="-10.0" /> <!-- def: -100.0 -->
+    <param name="xmax" value="10.0" /> <!-- def: 100.0 -->
+    <param name="ymax" value="10.0" /> <!-- def: 100.0 -->
     <!-- resolution of the map (in metres per occupancy grid block) -->
     <param name="delta" value="0.05" /> <!-- def: 0.05 -->
   </node>
@@ -52,8 +52,8 @@
     <param name="rotate_speed" value="0.1" />
     <param name="drive_speed" value="0.1" />
     <param name="dist_threshold" value="0.01" />
-    <param name="rotate_threshold" value="0.01" />
-    <param name="drive_threshold" value="0.01" />
+    <param name="rotate_tolerance" value="0.01" />
+    <param name="drive_tolerance" value="0.01" />
     <param name="x_pos" value="$(arg x_pos)" />
     <param name="y_pos" value="$(arg x_pos)" />
   </node>
