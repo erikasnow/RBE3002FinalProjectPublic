@@ -92,13 +92,13 @@ class Planning:
         robotx = self.px
         roboty = self.py
 
-        robotx, roboty = convert_location({robotx, roboty}, map)
+        robotx, roboty = convert_location((robotx, roboty), map)
+        width = int(map.info.width)
 
         # should this return a point or an index?
-        for cell in map.data:
+        for cell in  map.data:
             index = map.data.index(cell)
             no_wall = True
-            width = int(map.info.width)
 
             up = index + width  # I think the grid starts from bottom left
             down = index - width  # I think the grid starts from bottom left
@@ -116,7 +116,7 @@ class Planning:
                 no_wall = False
 
             if cell == -1 and no_wall:
-                ix, iy = index_to_point(map.data.index(cell), map)
+                ix, iy = index_to_point(index, map)
                 deltax = abs(ix - robotx)
                 deltay = abs(iy - roboty)
                 dist = sqrt((deltax * deltax) + (deltay * deltay))
