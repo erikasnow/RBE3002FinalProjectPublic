@@ -163,9 +163,7 @@ class A_Star:
         prev_del_y = 0
 
         for index in range(len(pose_list)):
-            if index == 0:
-                newpath.poses.append(pose_list[index])
-            elif index == pose_list.index(pose_list[-1]):
+            if index == pose_list.index(pose_list[-1]):
                 newpath.poses.append(pose_list[-1])
                 break
             else:
