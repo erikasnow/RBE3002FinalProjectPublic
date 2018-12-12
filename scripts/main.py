@@ -96,6 +96,29 @@ def odom_callback(msg):
     :return:
     """
     global start_pose
+    if(start_pose.pose.position.x is not msg.pose.pose.position.x or
+            start_pose.pose.position.y is not msg.pose.pose.position.y):
+
+        robot_loc = Point()
+        robot_loc.x = start_pose.pose.position.x
+        robot_loc.y = start_pose.pose.position.y
+
+        world_loc = (robot_loc.x, robot_loc.y)
+        grid_loc = convert_location(world_loc, my_map)
+        robot_loc.x, robot_loc.y = grid_loc
+
+        gridcell_points = []
+        gridcell_points.append(robot_loc)
+
+        gridcells = GridCells()
+        gridcells.header = msg.header
+        gridcells.header.stamp = rospy.Time.now()
+        gridcells.cell_width = my_map.info.resolution
+        gridcells.cell_height = my_map.info.resolution
+        gridcells.cells = gridcell_points
+
+        locationPublisher.publish(gridcells)
+
     start_pose.pose.position.x = msg.pose.pose.position.x
     start_pose.pose.position.y = msg.pose.pose.position.y
     #quat = msg.pose.pose.orientation
@@ -114,8 +137,11 @@ if __name__ == '__main__':
     start_pose.pose.position.y = rospy.get_param('~y_pos', 0.0)
 
     # occupancy grid for the map data
+    # make sure the map is being published before continuing, since
+    # odomSubscriber relies on it having data before it is run
     my_map = None
     mapSubscriber = rospy.Subscriber('map', OccupancyGrid, handle_map_updates)
+    rospy.wait_for_message('map', OccupancyGrid)
 
     # subscribe to rviz start and goal cells
     start_pose_subscriber = rospy.Subscriber('initialpose', PoseWithCovarianceStamped, handle_start_pose)
@@ -124,9 +150,10 @@ if __name__ == '__main__':
     # subscribe to odom updates to update the start cell
     odomSubscriber = rospy.Subscriber('odom', Odometry, odom_callback)
 
-    # publish start and goal cells
+    # publish start, goal, and current location cells to rviz
     initPublisher = rospy.Publisher('initcell', GridCells, queue_size=1)
     goalPublisher = rospy.Publisher('goalcell', GridCells, queue_size=1)
+    locationPublisher = rospy.Publisher('location', GridCells, queue_size=1)
 
     # publish the optimal path
     pathPublisher = rospy.Publisher('path', Path, queue_size=1)
