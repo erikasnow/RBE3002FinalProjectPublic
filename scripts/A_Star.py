@@ -21,7 +21,7 @@ class A_Star:
 
         # occupancy grid for the data
         self.my_map = None
-        self.mapSubscriber = rospy.Subscriber('map', OccupancyGrid, self.dynamic_map_client)
+        self.mapSubscriber = rospy.Subscriber('costmap', OccupancyGrid, self.dynamic_map_client)
 
         # publish the frontier and explored cells while running A*
         self.frontierPublisher = rospy.Publisher('frontier', GridCells, queue_size=1)
@@ -86,7 +86,7 @@ class A_Star:
                 #came_from[goal] = current
                 break
 
-            wavefront = get_neighbors(current, self.my_map, True)
+            wavefront = filter_valid_arr(get_neighbors(current, self.my_map, True), self.my_map)
 
             for next in wavefront:
                 # publish the frontier and explored cells to rviz for debugging
@@ -140,13 +140,16 @@ class A_Star:
             :param index2: tuple of location
             :return: Manhattan distance between two points
         """
-        map_width = self.my_map.info.width
-        x1,y1 = index_to_point(index1,self.my_map)
-        x2,y2 = index_to_point(index2,self.my_map)
-
-        y = abs(y1 - y2)
-        x = abs(x1 - x2)
-        cost = sqrt(pow(x,2) + pow(y,2))
+        # map_width = self.my_map.info.width
+        # x1,y1 = index_to_point(index1,self.my_map)
+        # x2,y2 = index_to_point(index2,self.my_map)
+        #
+        # y = abs(y1 - y2)
+        # x = abs(x1 - x2)
+        # cost = sqrt(pow(x,2) + pow(y,2))
+        cost1 = self.my_map.data[index1]
+        cost2 = self.my_map.data[index2]
+        cost = cost2 - cost1
         return cost
 
     def optimize_path(self, path):

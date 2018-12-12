@@ -43,6 +43,15 @@ def get_neighbors(index, my_map, is_eight_con):
     return neighbors
 
 
+def filter_valid_arr(array, my_map):
+    out_arr = []
+    for index in array:
+        if is_valid_loc(index, my_map):
+            out_arr.append(index)
+
+    return out_arr
+
+
 def is_valid_loc(index, my_map):
     """
         Gets if a point is a legal location

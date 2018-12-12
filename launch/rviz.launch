@@ -48,6 +48,8 @@
     <param name="y_pos" value="$(arg x_pos)" />
   </node>
 
+  <node name="costmap" pkg="rbe3002code02" type="cost_map.py" output ="screen"/>
+
   <node name="Robot" pkg="rbe3002code02" type="Robot.py" output="screen">
     <param name="rotate_speed" value="0.1" />
     <param name="drive_speed" value="0.1" />
@@ -57,5 +59,7 @@
     <param name="x_pos" value="$(arg x_pos)" />
     <param name="y_pos" value="$(arg x_pos)" />
   </node>
+
+
 
 </launch>

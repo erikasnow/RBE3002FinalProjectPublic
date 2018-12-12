@@ -21,7 +21,7 @@ def process_pose_message(msg, x_position, y_position):
     point.y = y_position
 
     world_loc = (point.x, point.y)
-    grid_loc = convert_location(world_loc, my_map)
+    grid_loc = convert_location(world_loc, my_gmap)
     point.x, point.y = grid_loc
 
     points = []
@@ -29,8 +29,8 @@ def process_pose_message(msg, x_position, y_position):
 
     gridcells = GridCells()
     gridcells.header = header
-    gridcells.cell_width = my_map.info.resolution
-    gridcells.cell_height = my_map.info.resolution
+    gridcells.cell_width = my_gmap.info.resolution
+    gridcells.cell_height = my_gmap.info.resolution
     gridcells.cells = points
 
     return grid_loc, gridcells
@@ -83,9 +83,14 @@ def handle_goal(msg):
         print "\nA* service call failed:\n" + str(e)
 
 
-def handle_map_updates(msg):
-    global my_map
-    my_map = msg
+def handle_gmap_updates(msg):
+    global my_gmap
+    my_gmap = msg
+
+#
+# def handle_cost_map_updates(msg):
+#         global my_cmap
+#         my_cmap = msg
 
 
 # grabs pose of the turtlebot
@@ -104,7 +109,7 @@ def odom_callback(msg):
         robot_loc.y = start_pose.pose.position.y
 
         world_loc = (robot_loc.x, robot_loc.y)
-        grid_loc = convert_location(world_loc, my_map)
+        grid_loc = convert_location(world_loc, my_gmap)
         robot_loc.x, robot_loc.y = grid_loc
 
         gridcell_points = []
@@ -113,8 +118,8 @@ def odom_callback(msg):
         gridcells = GridCells()
         gridcells.header = msg.header
         gridcells.header.stamp = rospy.Time.now()
-        gridcells.cell_width = my_map.info.resolution
-        gridcells.cell_height = my_map.info.resolution
+        gridcells.cell_width = my_gmap.info.resolution
+        gridcells.cell_height = my_gmap.info.resolution
         gridcells.cells = gridcell_points
 
         locationPublisher.publish(gridcells)
@@ -139,10 +144,10 @@ if __name__ == '__main__':
     # occupancy grid for the map data
     # make sure the map is being published before continuing, since
     # odomSubscriber relies on it having data before it is run
-    my_map = None
-    mapSubscriber = rospy.Subscriber('map', OccupancyGrid, handle_map_updates)
+    my_gmap = None
+    mapSubscriber = rospy.Subscriber('map', OccupancyGrid, handle_gmap_updates)
     rospy.wait_for_message('map', OccupancyGrid)
-
+    # cmapSubscriber = rospy.Subscriber('cost_map', OccupancyGrid, handle_cost_map_updates)
     # subscribe to rviz start and goal cells
     start_pose_subscriber = rospy.Subscriber('initialpose', PoseWithCovarianceStamped, handle_start_pose)
     goal_subscriber = rospy.Subscriber('move_base_simple/goal', PoseStamped, handle_goal)
