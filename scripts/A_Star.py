@@ -142,16 +142,15 @@ class A_Star:
             :param index2: tuple of location
             :return: Manhattan distance between two points
         """
-        # map_width = self.my_map.info.width
-        # x1,y1 = index_to_point(index1,self.my_map)
-        # x2,y2 = index_to_point(index2,self.my_map)
-        #
-        # y = abs(y1 - y2)
-        # x = abs(x1 - x2)
-        # cost = sqrt(pow(x,2) + pow(y,2))
-        cost1 = self.my_map.data[index1]
-        cost2 = self.my_map.data[index2]
-        cost = cost2 - cost1
+        x1,y1 = index_to_point(index1,self.my_map)
+        x2,y2 = index_to_point(index2,self.my_map)
+
+        y = abs(y1 - y2)
+        x = abs(x1 - x2)
+        cost = sqrt(pow(x,2) + pow(y,2))
+        # cost1 = self.my_map.data[index1]
+        # cost2 = self.my_map.data[index2]
+        # cost = cost2 - cost1
         print "The cost to travel between " + str(index1) + " and " + str(index2) + " is " + str(cost)
         return cost
 

@@ -45,19 +45,10 @@ class ExpandMap:
             for index in range(len(map.data)):
                 if map.data[index] > 50:  # if cell is a wall
                     percent = map.data[index]
-                    # index = map.data.index(cell) # very wrong
-                    # print("index: " + str(index))
                     neighbors = get_neighbors(index, map, True)  # get all valid neighbors
-                    # print("neighbors: " + str(neighbors))
-
                     for n in neighbors:
                         map_data[n] = percent  # expand the wall into all free neighbors
-
-            print "Type of map.data: " + str(type(map.data))
-            print "Type of map_data: " + str(type(map_data))
             map.data = tuple(map_data)
-            print "Type of map.data: " + str(type(map.data))
-            print "Type of map_data: " + str(type(map_data))
             count = count + 1
 
         # publish the final expanded map
