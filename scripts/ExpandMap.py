@@ -66,7 +66,7 @@ class ExpandMap:
 if __name__ == '__main__':
     print("make ExpandMap")
     e = ExpandMap()
-    size = 3
+    size = 4
     oldmap = e.raw_map
     e.expand_map(size)  # this is an arbitrary number for now
     # keep updating the expanded map
