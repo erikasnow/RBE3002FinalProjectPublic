@@ -52,14 +52,16 @@ class ExpandMap:
 
                     for n in neighbors:
                         map_data[n] = percent  # expand the wall into all free neighbors
+
+            print "Type of map.data: " + str(type(map.data))
+            print "Type of map_data: " + str(type(map_data))
+            map.data = tuple(map_data)
+            print "Type of map.data: " + str(type(map.data))
+            print "Type of map_data: " + str(type(map_data))
             count = count + 1
 
         # publish the final expanded map
-        print "Type of map.data: " + str(type(map.data))
-        print "Type of map_data: " + str(type(map_data))
-        map.data = tuple(map_data)
-        print "Type of map.data: " + str(type(map.data))
-        print "Type of map_data: " + str(type(map_data))
+
         self.mapPublisher.publish(map)
 
     def fill_gaps(self, map):
