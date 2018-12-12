@@ -19,20 +19,15 @@ def get_neighbors(index, my_map, is_eight_con):
 
     map_width = my_map.info.width
 
-
     up = index + map_width
     down = index - map_width
     left = index - 1
     right = index + 1
 
-    if is_valid_loc(up, my_map):
-        neighbors.append(up)
-    if is_valid_loc(down, my_map):
-        neighbors.append(down)
-    if is_valid_loc(left, my_map):
-        neighbors.append(left)
-    if is_valid_loc(right, my_map):
-        neighbors.append(right)
+    neighbors.append(up)
+    neighbors.append(down)
+    neighbors.append(left)
+    neighbors.append(right)
 
     if is_eight_con:
         up_right = index + 1 + map_width
@@ -40,14 +35,10 @@ def get_neighbors(index, my_map, is_eight_con):
         down_right = index + 1 - map_width
         down_left = index - 1 - map_width
 
-        if is_valid_loc(up_right, my_map):
-            neighbors.append(up_right)
-        if is_valid_loc(up_left, my_map):
-            neighbors.append(up_left)
-        if is_valid_loc(down_right, my_map):
-            neighbors.append(down_right)
-        if is_valid_loc(down_left, my_map):
-            neighbors.append(down_left)
+        neighbors.append(up_right)
+        neighbors.append(up_left)
+        neighbors.append(down_right)
+        neighbors.append(down_left)
 
     return neighbors
 
