@@ -18,6 +18,9 @@ class Robot:
         rospy.init_node('Robot', anonymous=True)
 
         self.velPublisher = rospy.Publisher('cmd_vel', Twist, queue_size=1)
+        # publish pose when reached
+        self.donePublisher = rospy.Publisher('done', Pose, queue_size=1)
+
         self.odomSubscriber = rospy.Subscriber('odom', Odometry, self.odom_callback)
 
         # subscribe to navigation targets from main
@@ -37,7 +40,6 @@ class Robot:
         self.count = 0
         print("Robot initialized")
 
-
     # receive and set the target point that the robot should travel to
     # then, start navigating towards it
     def set_target(self, target_pose):
@@ -45,10 +47,10 @@ class Robot:
         print("\n" + "navigation target updated:\n" + str(self.target))
         self.nav_to_point()
 
-
     def nav_to_point(self):
-        goalx = self.target.x
-        goaly = self.target.y
+        goal = self.target
+        goalx = goal.x
+        goaly = goal.y
         currx = self.px
         curry = self.py
 
@@ -65,6 +67,8 @@ class Robot:
             self.rotate(angle)
             self.drive_straight(distance)
 
+        # let main node know robot has finished traveling
+        self.donePublisher.publish(goal)
 
     def drive_straight(self, distance_to_travel):
         """
@@ -101,7 +105,6 @@ class Robot:
         print("Actual: " + str(distance_driven))
         print("Error: " + str(abs(distance_to_travel - distance_driven)) + "\n\n")
 
-
     def rotate(self, angle):
         """
         Rotate in place
@@ -131,7 +134,6 @@ class Robot:
         print("Desired angle: " + str(angle))
         print("Actual: " + str(self.yaw))
         print("Error: " + str(abs(angle - self.yaw)))
-
 
     # receive updates for the pose of the turtlebot
     def odom_callback(self, msg):

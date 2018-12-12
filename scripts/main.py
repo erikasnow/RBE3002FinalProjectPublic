@@ -75,6 +75,7 @@ def handle_goal(msg):
         get_plan.goal = goal_pose
         astar_service = rospy.ServiceProxy('astar', GetPlan)
         response = astar_service(start_pose, goal_pose, 0.1)
+        global path
         path = response.plan
         pathPublisher.publish(path)
         targetPublisher.publish(path.poses[1].pose)
@@ -130,6 +131,10 @@ def odom_callback(msg):
     #q = [quat.x, quat.y, quat.z, quat.w]
     #self.roll, self.pitch, self.yaw = euler_from_quaternion(q)
 
+def handle_robot_done(msg):
+    global last_pose_finished
+    last_pose_finished = msg
+
 
 if __name__ == '__main__':
 
@@ -166,8 +171,38 @@ if __name__ == '__main__':
     # publish the navigation target
     targetPublisher = rospy.Publisher('target', Pose, queue_size=1)
 
+    path = Path()
+    currpose = Pose()
+    last_pose_finished = Pose()
+
     print "waiting for A* service"
     rospy.wait_for_service('astar')
     print "main sees A* service"
+
+    # important variables
+    x = start_pose.pose.position.x
+    y = start_pose.pose.position.y
+
+    currpath = path
+    currpathcopy = path
+    if len(path.poses) != 0:
+        currpose = currpath.poses[0].pose
+
+    rospy.wait_for_message('done', Pose)
+
+    # main loop
+    while not rospy.is_shutdown():
+        # if path hasn't changed and robot finished last pose it moved to
+        if currpath == path and currpose == last_pose_finished:
+            # publish next waypoint for robot
+            currpathcopy.poses.pop(0)
+            print("next pose: " + str(currpathcopy.poses[0].pose))
+            targetPublisher.publish(currpathcopy.poses[0].pose)
+        elif currpath != path:
+            # update the current path
+            currpath = path
+            currpathcopy = path
+            currpose = currpath.poses[0].pose
+
 
     rospy.spin()
