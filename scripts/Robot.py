@@ -1,11 +1,10 @@
 #!/usr/bin/env python
-from math import sqrt, pi, atan2
+from math import sqrt, atan2
 import roslib
 import rospy
 import numpy as np
 from geometry_msgs.msg import PoseStamped, Pose, PoseWithCovariance, Twist, Quaternion, Point
 from nav_msgs.msg import Odometry, Path
-import tf
 from tf.transformations import euler_from_quaternion
 
 
@@ -69,19 +68,15 @@ class Robot:
 
     def drive_straight(self, distance_to_travel):
         """
-        Make the turtlebot drive straight
-        :type speed: float
+        Make the turtlebot drive straight for a given distance
         :type distance_to_travel: float
-        :param speed: speed to drive
         :param distance_to_travel: distance to be traveled
         :return:
         """
         # set starting and current positions, and the distance driven so far
         start_x = self.px
         start_y = self.py
-#        curr_x = start_x
-#        curr_y = start_y
-        distance_driven = 0.0 #sqrt((start_y - curr_y)**2 + (start_x - curr_x)**2)
+        distance_driven = 0.0
 
         # print debugging information
         print("\n" + "entered drive_straight")
@@ -94,18 +89,9 @@ class Robot:
 
         # get the tolerance from the launch file, drive until within tolerance
         tolerance = rospy.get_param('~drive_tolerance', 0.05)
-        while tolerance < abs(distance_to_travel - distance_driven):
-
-            #publish driving command
+        while tolerance < abs(distance_to_travel - distance_driven) and not rospy.is_shutdown():
             self.velPublisher.publish(vel_msg)
-
-            # calculate the distance the robot has driven so far
-#            currpos = sqrt((self.px * self.px) + (self.py * self.py))
             distance_driven = sqrt((start_y - self.py)**2 + (start_x - self.px)**2)
-
-            # end the code nicely if shut down
-            if rospy.is_shutdown():
-                break
 
         # stop driving
         vel_msg = Twist()
@@ -124,8 +110,8 @@ class Robot:
         """
         # print debugging information
         print("\n" + "entered rotate")
-        print "target angle is:\t" + str(angle)
-        print "current yaw is:\t" + str(self.yaw)
+        print "target angle is: " + str(angle)
+        print "current yaw is:\t " + str(self.yaw)
 
         # make a twist message to command the robot to turn
         vel_msg = Twist()
