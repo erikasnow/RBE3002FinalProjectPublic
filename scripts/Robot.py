@@ -1,11 +1,10 @@
 #!/usr/bin/env python
-from math import sqrt, pi, atan2
+from math import sqrt, atan2
 import roslib
 import rospy
 import numpy as np
 from geometry_msgs.msg import PoseStamped, Pose, PoseWithCovariance, Twist, Quaternion, Point
 from nav_msgs.msg import Odometry, Path
-import tf
 from tf.transformations import euler_from_quaternion
 
 
@@ -13,174 +12,95 @@ class Robot:
 
     def __init__(self):
         """"
-        Set up the node here
+        sets up publishers and subscribers, and creates global variables
+        to store the robot pose and navigation target
         """
         rospy.init_node('Robot', anonymous=True)
-        # we should be publishing the velocity and the goal pose, and receiving the current pose
+
         self.velPublisher = rospy.Publisher('cmd_vel', Twist, queue_size=1)
         self.odomSubscriber = rospy.Subscriber('odom', Odometry, self.odom_callback)
-        # self.rvizSubscriber = rospy.Subscriber('rviz_click', PoseStamped, self.nav_to_pose)
-        # self.pathSubscriber = rospy.Subscriber('path', Path, self.handle_path)
-        self.poseSubscriber = rospy.Subscriber('target', PoseStamped, self.set_target)
-        self.poseSubscriberTest = rospy.Subscriber('test', Pose, self.set_target)
 
-        self.px = 0
-        self.py = 0
+        # subscribe to navigation targets from main
+        self.poseSubscriber = rospy.Subscriber('target', Pose, self.set_target)
+
+        # variables to store the robot's pose, initialized from the launch file
+        self.px = rospy.get_param('~x_pos', 0)
+        self.py = rospy.get_param('~x_pos', 0)
         self.roll = 0
         self.pitch = 0
         self.yaw = 0
 
-        # target point to travel to
+        # target point to travel to, initialized from the launch file
         self.target = Point()
+        self.target.x = rospy.get_param('~x_pos', 0.0)
+        self.target.y = rospy.get_param('~y_pos', 0.0)
         self.count = 0
-        print("made it through init")
+        print("Robot initialized")
 
-    # set the global point that the robot should travel to
-    def set_target(self, pose):
-        print("")
-        print("target updated")
-        self.target = pose.position  # we don't really care about the orientation of the robot, so no Quaternion
+
+    # receive and set the target point that the robot should travel to
+    # then, start navigating towards it
+    def set_target(self, target_pose):
+        self.target = target_pose.position  # drop orientation, we don't use it
+        print("\n" + "navigation target updated:\n" + str(self.target))
+        self.nav_to_point()
+
 
     def nav_to_point(self):
         goalx = self.target.x
         goaly = self.target.y
-
-        # rotate toward goal
         currx = self.px
         curry = self.py
+
         deltax = goalx - currx
         deltay = goaly - curry
 
-        threshold = 0.15
-
         distance = sqrt((deltax * deltax) + (deltay * deltay))
+        print "in nav_to_point, distance to target is: " + str(distance)
 
-        if threshold < (abs(distance)):
-            print("change in dist: " + str(abs(distance)))
-            angle = atan2(deltay, deltax)  # now have desired angle to rotate
+        threshold = rospy.get_param('~dist_threshold', 0.15)
+
+        if threshold < abs(distance):
+            angle = atan2(deltay, deltax)
             self.rotate(angle)
+            self.drive_straight(distance)
 
-            # drive straight
-            self.drive_straight(0.5, distance)
 
-    def handle_move_to_target(self):
-        if self.count < 2:
-            self.nav_to_point()
-
-    # deconstruct the path and call nav to pose for each one
-    def handle_path(self, path):
-        print("entered handle_path")
-        print("")
-        # delete first cell in the path so that Robot assumes it's at the start location
-        # path.poses.pop(0)
-
-        self.nav_to_pose(path.poses[0])
-        path.poses.pop(0)
-
-        for pose in path.poses:
-            print("")
-            print(pose.pose)
-            self.astar_nav(pose)
-
-        print("")
-        print("end of handle_path")
-
-    def astar_nav(self, goal):
-        print("")
-        print("entered astar_nav")
-
-        goalx = goal.pose.position.x
-        goaly = goal.pose.position.y
-
-        # rotate toward goal
-        currx = self.px
-        curry = self.py
-        deltax = goalx - currx
-        deltay = goaly - curry
-        angle = atan2(deltay, deltax)  # now have desired angle to rotate
-        self.rotate(angle)
-
-        # drive straight
-        distance = sqrt((deltax * deltax) + (deltay * deltay))
-        self.drive_straight(0.5, distance)
-
-    def nav_to_pose(self, goal):
-        # type: (PoseStamped) -> None
+    def drive_straight(self, distance_to_travel):
         """
-        This is a callback function. It should extract data from goal, drive in a straight line to reach the goal and
-        then spin to match the goal orientation.
-        :param goal: PoseStamped
+        Make the turtlebot drive straight for a given distance
+        :type distance_to_travel: float
+        :param distance_to_travel: distance to be traveled
         :return:
         """
-        print("")
-        print("entered nav_to_pose")
+        # set starting and current positions, and the distance driven so far
+        start_x = self.px
+        start_y = self.py
+        distance_driven = 0.0
 
-        goalx = goal.pose.position.x
-        goaly = goal.pose.position.y
-        quat = goal.pose.orientation
-        q = [quat.x, quat.y, quat.z, quat.w]
-        goalroll, goalpitch, goalyaw = euler_from_quaternion(q)
+        # print debugging information
+        print("\n" + "entered drive_straight")
+        print("starting location: (" + str(start_x) + " , " + str(start_y) + ")")
+        print("distance to travel: " + str(distance_to_travel))
 
-        # rotate toward goal
-        currx = self.px
-        curry = self.py
-        deltax = goalx - currx
-        deltay = goaly - curry
-        angle = atan2(deltay, deltax)  # now have desired angle to rotate
-        self.rotate(angle)
-
-        # drive straight
-        distance = sqrt((deltax * deltax) + (deltay * deltay))
-        self.drive_straight(0.3, distance)
-
-        # rotate to goal orientation
-        finalangle = goalyaw - self.yaw
-        self.rotate(finalangle)
-
-    def drive_straight(self, speed, distance):
-        """
-        Make the turtlebot drive straight
-        :type speed: float
-        :type distance: float
-        :param speed: speed to drive
-        :param distance: distance to drive
-        :return:
-        """
-        print("entered drive_straight")
-        # set initial position
-        startx = self.px
-        starty = self.py
-        startpos = sqrt((startx * startx) + (starty * starty))
-
-        threshold = 0.05
-
-        currpos = sqrt((self.px * self.px) + (self.py * self.py))
-        change = currpos - startpos
-        currdist = abs(change)
+        # make a twist message to command the robot at the launch file's speed
         vel_msg = Twist()
-        while (threshold < (abs(distance - currdist))):  # see if this improves accuracy
-            # start driving forward (i.e tell turtlebot to move at certain velocity -> publish a cmd_vel message)
-            vel_msg.linear.x = speed
-            vel_msg.linear.y = 0
-            vel_msg.linear.z = 0
-            vel_msg.angular.x = 0
-            vel_msg.angular.y = 0
-            vel_msg.angular.z = 0
+        vel_msg.linear.x = rospy.get_param('~drive_speed', 0.1)
+
+        # get the tolerance from the launch file, drive until within tolerance
+        tolerance = rospy.get_param('~drive_tolerance', 0.05)
+        while tolerance < abs(distance_to_travel - distance_driven) and not rospy.is_shutdown():
             self.velPublisher.publish(vel_msg)
+            distance_driven = sqrt((start_y - self.py)**2 + (start_x - self.px)**2)
 
-            # calculate distance between current location and initial location
-            # update the values
-            currpos = sqrt((self.px * self.px) + (self.py * self.py))
-            change = currpos - startpos
-            currdist = abs(change)
-
-        # stop when set distance has been achieved (i.e publish a cmd_vel message w/ all zeroes)
-        vel_msg.linear.x = 0
-        print("Desired distance: " + str(distance))
-        print("Actual: " + str(currdist))
-        print("Error: " + str(abs(distance - currdist)))
-        print("")
+        # stop driving
+        vel_msg = Twist()
         self.velPublisher.publish(vel_msg)
+        print("\n" + "finished driving")
+        print("Desired distance: " + str(distance_to_travel))
+        print("Actual: " + str(distance_driven))
+        print("Error: " + str(abs(distance_to_travel - distance_driven)) + "\n\n")
+
 
     def rotate(self, angle):
         """
@@ -188,44 +108,32 @@ class Robot:
         :param angle: angle to rotate
         :return:
         """
-        print("entered rotate")
-        # set initial position
-        currangle = self.yaw % (2 * pi)  # get rid of gross pi/ -pi thing
-        endangle = (currangle + angle) % (2 * pi)
+        # print debugging information
+        print("\n" + "entered rotate")
+        print "target angle is: " + str(angle)
+        print "current yaw is:\t " + str(self.yaw)
 
-        """
-        # grab necessary direction
-        if(endangle < currangle):
-            direction = -1  # if angle was negative, move right
-        else:
-            direction = 1  # if angle was position, move left
-        """
-
-        threshold = 0.03  # allowed error in radians (1.7 degrees, currently)
-
+        # make a twist message to command the robot to turn
         vel_msg = Twist()
-        # move in that direction until you've rotated the total specified angle
-        while threshold < abs(endangle-currangle):
-            # start spinning robot in correct direction
-            vel_msg.linear.x = 0
-            vel_msg.linear.y = 0
-            vel_msg.linear.z = 0
-            vel_msg.angular.x = 0
-            vel_msg.angular.y = 0
-            vel_msg.angular.z = 0.3
+        vel_msg.angular.z = rospy.get_param('~rotate_speed', 0.15)
+        if angle < 0: # if it would be easier to turn the other way, change sign
+            vel_msg.angular.z = -vel_msg.angular.z
+
+        # rotate in that direction to within tolerance of the specified angle
+        tolerance = rospy.get_param('~rotate_tolerance', 0.03)
+        while abs(self.yaw - angle) > tolerance and not rospy.is_shutdown():
             self.velPublisher.publish(vel_msg)
 
-            # update the current angle
-            currangle = self.yaw % (2 * pi)  # get rid of gross pi/ -pi thing
-
-        # stop at desired angle
+        # stop rotating
         vel_msg.angular.z = 0
         self.velPublisher.publish(vel_msg)
-        print("Desired angle: " + str(endangle))
-        print("Actual: " + str(currangle))
-        print("Error: " + str(abs(endangle - currangle)))
+        print("\n" + "finished rotating")
+        print("Desired angle: " + str(angle))
+        print("Actual: " + str(self.yaw))
+        print("Error: " + str(abs(angle - self.yaw)))
 
-    # grabs pose of the turtlebot
+
+    # receive updates for the pose of the turtlebot
     def odom_callback(self, msg):
         """
         update the state of the robot
@@ -243,12 +151,5 @@ if __name__ == '__main__':
     print("make robot")
     r = Robot()
     rospy.sleep(1)  # make sure the robot has time to receive init values
-    while True:  # maybe add in if target hasn't changed in a certain number of iterations?
-        goal = r.target
-        r.handle_move_to_target()
-        if goal == r.target:
-            r.count += 1
-        else:
-            r.count = 0
 
     rospy.spin()
