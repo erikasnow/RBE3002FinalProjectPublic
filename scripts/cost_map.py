@@ -16,10 +16,11 @@ class cost_map:
         rospy.init_node("cost_map")
 
         self.gmap_subscriber = rospy.Subscriber('map', OccupancyGrid, self.expand_map)
-        self.costmap_publisher = rospy.Publisher('costmap', OccupancyGrid, queue_size=1)
+        self.costmap_publisher = rospy.Publisher('costmap', OccupancyGrid, queue_size=10)
 
         self.old_map = None
         self.new_map = OccupancyGrid()
+
 
     def expand_map(self, msg):
         """
@@ -28,8 +29,7 @@ class cost_map:
         """
         self.old_map = msg
         cells = self.old_map.data
-        size = len(self.old_map.data)
-        new_data = [-1] * size
+        new_data = list(cells)
         self.new_map = self.old_map
 
         for index in range(len(cells)):
@@ -49,12 +49,9 @@ class cost_map:
                         neighbors.extend(get_neighbors(curr_index, self.old_map,True))
 
                         cost = self.calculate_weight(index, curr_index)
-                        print "Obstacle index: " + str(index) + \
-                            " | current cell index: " + str(curr_index) +\
-                            " | calculated cost: " + str(cost) + \
-                            " | previous cost: " + str(cells[curr_index])
+                        #print "calculated cost at " + str(curr_index) + " is " + str(cost)
                         if cost > self.new_map.data[curr_index] and cells[curr_index] != -1:
-                            print "Overwriting old value " + str(cells[curr_index]) + " at index " + str(curr_index) + " with " + str(cost)
+                            #print  "adding new cost " + str(cost) + " at index " + str(curr_index)
                             new_data[curr_index] = cost
 
         new_data = tuple(new_data)
@@ -81,10 +78,12 @@ class cost_map:
 
         dist = sqrt(pow(dif_x,2) + pow(dif_y,2))
 
-        cost = int(100 - pow(dist,3) + 1)
+        cost = int(100 - pow(dist,3) + 8)
 
         if cost < 0:
             cost =  0
+        if cost > 100:
+            cost = 100
 
         return cost
 

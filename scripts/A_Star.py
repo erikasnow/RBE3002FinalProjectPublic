@@ -74,6 +74,8 @@ class A_Star:
         came_from = {}
         cost_so_far = {}
 
+        print "initialized structs"
+
         # add the start cell
         frontier.put(start, 0)
         cost_so_far[start] = 0
@@ -83,11 +85,10 @@ class A_Star:
             current = frontier.get()
 
             if current == goal:
-                #came_from[goal] = current
                 break
 
             wavefront = filter_valid_arr(get_neighbors(current, self.my_map, True), self.my_map)
-
+            print " filtered wavefront: " + str(wavefront)
             for next in wavefront:
                 # publish the frontier and explored cells to rviz for debugging
                 self.paint_frontier(frontier)
@@ -96,6 +97,7 @@ class A_Star:
 
                 # find the total cost of going from start to next
                 cost = cost_so_far[current] + self.move_cost(current, next)
+                print "cost for index " + str(current) + ": " + str(cost)
                 # if this is the first time exploring next, add it in
                 # or, if we just found a faster way to get to next, update it
                 if next not in cost_so_far or cost < cost_so_far[next]:
@@ -150,6 +152,7 @@ class A_Star:
         cost1 = self.my_map.data[index1]
         cost2 = self.my_map.data[index2]
         cost = cost2 - cost1
+        print "The cost to travel between " + str(index1) + " and " + str(index2) + " is " + str(cost)
         return cost
 
     def optimize_path(self, path):
