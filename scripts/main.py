@@ -62,6 +62,7 @@ def handle_goal(msg):
         :return:
     """
     goal_pose = msg
+    print "Handling goal message for: " + str(msg)
     x_position = msg.pose.position.x
     y_position = msg.pose.position.y
 
@@ -70,6 +71,7 @@ def handle_goal(msg):
     goalPublisher.publish(goalcell)
 
     try:
+        print "Trying A* service"
         get_plan = GetPlan()
         get_plan.start = start_pose
         get_plan.goal = goal_pose
@@ -145,11 +147,10 @@ if __name__ == '__main__':
     my_map = None
     mapSubscriber = rospy.Subscriber('costmap', OccupancyGrid, handle_map_updates)
     rospy.wait_for_message('costmap', OccupancyGrid)
-    # cmapSubscriber = rospy.Subscriber('cost_map', OccupancyGrid, handle_cost_map_updates)
 
     # subscribe to rviz start and goal cells
     start_pose_subscriber = rospy.Subscriber('initialpose', PoseWithCovarianceStamped, handle_start_pose)
-    goal_subscriber = rospy.Subscriber('move_base_simple/goal', PoseStamped, handle_goal)
+    goal_subscriber = rospy.Subscriber('nearest_frontier', PoseStamped, handle_goal)
 
     # subscribe to robot done messages
     doneSubscriber = rospy.Subscriber('done', Pose, handle_robot_done)
@@ -185,8 +186,8 @@ if __name__ == '__main__':
     if len(path.poses) != 0:
         currpose = currpath.poses[0].pose
 
-    rospy.wait_for_message('move_base_simple/goal', PoseStamped)
-    print("got button click")
+    rospy.wait_for_message('nearest_frontier', PoseStamped)
+    print("got nearest_frontier")
 
     # main loop
     while not rospy.is_shutdown():
