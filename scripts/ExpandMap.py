@@ -66,6 +66,7 @@ class ExpandMap:
 if __name__ == '__main__':
     e = ExpandMap()
     print("ExpandMap initialized")
+    rospy.sleep(1)
     size = 4
     oldmap = e.raw_map
     e.expand_map(size)  # this is an arbitrary number for now

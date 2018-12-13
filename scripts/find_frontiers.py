@@ -16,16 +16,22 @@ class Frontier:
         # subscribes to /map and robot odometry
         self.mapSubscriber = rospy.Subscriber('costmap', OccupancyGrid, self.handle_map)
         self.odomSubscriber = rospy.Subscriber('odom', Odometry, self.handle_odom)
+        self.doneSubscriber = rospy.Subscriber('done', Pose, self.handle_robot_done)
 
         # publishes nearest frontier and a list of all frontiers
         self.nearestPublisher = rospy.Publisher('nearest_frontier', PoseStamped, queue_size=1)
         self.frontierCellsPublisher = rospy.Publisher('unmapped_frontiers', GridCells, queue_size=10)
 
         # global variables
+        self.last_point = Pose()
         self.mymap = OccupancyGrid()
         self.px = 0
         self.py = 0
 
+    def handle_robot_done(self, msg):
+        print()
+        print("frontiers knows robot is done moving")
+        self.last_point = msg
 
     def handle_map(self, msg):
         """
@@ -34,12 +40,11 @@ class Frontier:
             :return:
         """
         self.mymap = msg
-        frontiers = self.find_all_frontiers()
-        self.publish_frontiers(frontiers)
-        closest_frontier = self.find_next_target(frontiers)
-        if closest_frontier:
-            self.publish_nearest_frontier(closest_frontier)
-
+        #frontiers = self.find_all_frontiers()
+        #self.publish_frontiers(frontiers)
+        #closest_frontier = self.find_next_target(frontiers)
+        #if closest_frontier:
+        #    self.publish_nearest_frontier(closest_frontier)
 
     def handle_odom(self, msg):
         """
@@ -103,9 +108,7 @@ class Frontier:
             print "\n\n\n\n\n" + "finished mapping! please run:" + "\n\n"
             print "\t\t" + "rosrun map_server map_saver -f [map_file_name]"
             print "\n\n" + "and then start the other launch file"
-        print "frontier cells: " + str(frontier_list)
         return frontier_list
-
 
     def find_next_target(self, frontier_list):
         """
@@ -147,7 +150,6 @@ class Frontier:
             print "next target frontier is: " + str(closest_frontier)
             return closest_frontier
 
-
     def publish_frontiers(self, frontiers):
         # set up frontier_cells in a publishable state
         frontier_cells = GridCells()
@@ -165,7 +167,6 @@ class Frontier:
 
         self.frontierCellsPublisher.publish(frontier_cells)
 
-
     def publish_nearest_frontier(self, frontier):
         target = PoseStamped()
         target.header.frame_id = 'map'
@@ -179,5 +180,39 @@ if __name__ == '__main__':
     print "find_frontiers is waiting for a costmap message"
     rospy.wait_for_message('costmap', OccupancyGrid)
     print "find_frontiers is ready"
+
+    rospy.sleep(1)
+
+    # initialize everything
+    currmap = f.mymap
+    frontiers = f.find_all_frontiers()
+    f.publish_frontiers(frontiers)
+    currfrontier = f.find_next_target(frontiers)
+    if currfrontier:
+        f.publish_nearest_frontier(currfrontier)
+
+    # it really makes sense to put this in main, but I hope this will be faster for now
+    #rospy.wait_for_message('done', Pose)  # we sent a frontier, now wait for robot to tell us it moved
+
+    while not rospy.is_shutdown():
+
+        # only update if we get a map update
+        if currmap != f.mymap:  # this may need to be more accurate than this
+            print("frontier node received new map")
+            currmap = f.mymap
+
+            frontiers = f.find_all_frontiers()
+            f.publish_frontiers(frontiers)
+
+            closest_frontier = f.find_next_target(frontiers)
+
+            # only publish if nearest frontier has been updated
+            if closest_frontier and closest_frontier != currfrontier:
+                print("publishing new frontier")
+                currfrontier = closest_frontier
+                f.publish_nearest_frontier(closest_frontier)
+
+        rospy.sleep(5)  # wait for 5 seconds
+        #rospy.wait_for_message('done', Pose)
 
     rospy.spin()

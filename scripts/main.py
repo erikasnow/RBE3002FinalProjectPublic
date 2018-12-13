@@ -23,9 +23,7 @@ def process_pose_message(msg, x_position, y_position):
     point.y = y_position
 
     world_loc = (point.x, point.y)
-    print "world_loc: " + str(world_loc)
     grid_loc = convert_location(world_loc, my_map)
-    print "grid_loc: " + str(grid_loc)
 
     point.x, point.y = grid_loc
 
@@ -66,15 +64,19 @@ def handle_goal(msg):
         :param msg:
         :return:
     """
+    global goal_pose
     goal_pose = msg
-    print "Handling goal message for: " + str(msg)
     x_position = msg.pose.position.x
     y_position = msg.pose.position.y
 
     #goalcell = process_pose_message(msg, x_position, y_position)
     goal_loc, goalcell = process_pose_message(msg, x_position, y_position)
-    print "goal_cell: " + str(goalcell)
     goalPublisher.publish(goalcell)
+
+
+def call_astar():
+    global goal_pose
+    global start_pose
 
     try:
         print "Trying A* service"
@@ -86,8 +88,7 @@ def handle_goal(msg):
         global path
         path = response.plan
         pathPublisher.publish(path)
-        targetPublisher.publish(path.poses[1].pose)
-        print "navigation target set to:\n" + str(path.poses[1].pose.position)
+        #targetPublisher.publish(path.poses[1].pose)
     except rospy.ServiceException, e:
         print "\nA* service call failed:\n" + str(e)
 
@@ -137,10 +138,19 @@ def handle_robot_done(msg):
     last_pose_finished = msg
 
 
+def check_new_frontier(curr_frontier):
+    global goal_pose
+    if goal_pose == curr_frontier:
+        return False
+    else:
+        return True
+
+
 if __name__ == '__main__':
 
     rospy.init_node("main")
     print "main node initialized"
+    rospy.sleep(1)
 
     # variable to store the robot's location, initialized from launch file
     start_pose = PoseStamped()
@@ -178,6 +188,7 @@ if __name__ == '__main__':
     path = Path()
     currpose = Pose()
     last_pose_finished = Pose()
+    goal_pose = PoseStamped()
 
     print "waiting for A* service"
     rospy.wait_for_service('astar')
@@ -187,18 +198,27 @@ if __name__ == '__main__':
     x = start_pose.pose.position.x
     y = start_pose.pose.position.y
 
+    rospy.wait_for_message('nearest_frontier', PoseStamped)
+    print("got nearest_frontier")
+
+    currgoal = goal_pose
+
+    call_astar()
+
     currpath = path
     currpathcopy = path
     if len(path.poses) != 0:
-        currpose = currpath.poses[0].pose
+        currpose = currpath.poses[1].pose
 
-    rospy.wait_for_message('nearest_frontier', PoseStamped)
-    print("got nearest_frontier")
+    targetPublisher.publish(currpathcopy.poses[1].pose)
+    print("")
+    print("PUBLISHED FIRST TARGET")
 
     # main loop
     while not rospy.is_shutdown():
         # if path hasn't changed and robot finished last pose it moved to
         if currpath.poses == path.poses and currpose == last_pose_finished:
+            print("PATH IS SAME, GET NEXT POSE")
             currpathcopy.poses.pop(0)
 
             # if there are still poses in the path, keep publishing
@@ -206,17 +226,32 @@ if __name__ == '__main__':
 
                 # publish next waypoint for robot
                 targetPublisher.publish(currpathcopy.poses[0].pose)
+                print("publish target")
 
                 # wait for response
                 while last_pose_finished == currpose:
                     rospy.wait_for_message('done', Pose)
                 currpose = last_pose_finished
+                print("robot is done moving")
+                if check_new_frontier(currgoal):
+                    # if it's updated, then call astar and grab a new path
+                    call_astar()
+                    print("should now have path")
+                    currgoal = goal_pose
+
+                    currpath = path
+                    currpathcopy = path
+
+                    #while last_pose_finished == currpose:  # astar publishes first target location
+                    #    rospy.wait_for_message('done', Pose)
+                    #currpose = last_pose_finished
 
             # if no more poses, break out of while loop and save the map
             else:
                 print("path is finished -- wait for new path")
                 while currpath.poses == path.poses:
                     rospy.sleep(.5)  # hopefully only pauses this node for half a second
+
         elif currpath.poses != path.poses:
             print("currpath.poses != path.poses")
             # update the current path
@@ -224,4 +259,10 @@ if __name__ == '__main__':
             currpathcopy = path
             currpose = last_pose_finished
 
+        else:
+            print("PATH IS SAME, TARGET IS NOT")
+            currpose = last_pose_finished
+
+
     rospy.spin()
+

@@ -38,8 +38,8 @@ class Robot:
         self.target.position.x = rospy.get_param('~x_pos', 0.0)
         self.target.position.y = rospy.get_param('~y_pos', 0.0)
         self.count = 0
-        self.rotate(1)
-        self.rotate(-1)
+        #self.rotate(1)
+        #self.rotate(-1)
 
         print("Robot initialized")
 
