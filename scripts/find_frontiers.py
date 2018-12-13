@@ -3,6 +3,7 @@ import rospy
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Odometry, GridCells
 from map_helper import *
+from math import sqrt
 
 
 class Frontier:
@@ -35,7 +36,9 @@ class Frontier:
         self.mymap = msg
         frontiers = self.find_all_frontiers()
         self.publish_frontiers(frontiers)
-        self.find_next_target(frontiers)
+        closest_frontier = self.find_next_target(frontiers)
+        if closest_frontier:
+            self.publish_nearest_frontier(closest_frontier)
 
 
     def handle_odom(self, msg):
@@ -46,7 +49,6 @@ class Frontier:
         """
         self.px = msg.pose.pose.position.x
         self.py = msg.pose.pose.position.y
-
 
     def find_all_frontiers(self):
         """
@@ -106,35 +108,35 @@ class Frontier:
         # TODO: this should actually find the first frontier cell that is a
         # certain distance away from the robot, so we can avoid getting stuck
 
-        print "find_frontier is looking for the next target"
+        print "looking for the next target in " + str(len(frontier_list)) + " options"
 
-        # find the robot's current index to search from
-        location = (self.px, self.py)
-        start_index = point_to_index(location, self.mymap)
+        closest_frontier = None
+        closest_distance = 9999999999
 
-        # run a breadth-first search until we find a frontier cell
-        queue = [start_index]
-        visited = []
-        while queue:
-            current = queue.pop(0)
-            visited.append(current)
+        for frontier in frontier_list:
 
-            # if we've found a frontier cell, return it as a point
-            if current in frontier_list:
-                print "next target index is:\n" + str(current)
-                return current
+            # calculate the distance from the robot's location (px, py)
+            # to the current frontier cell
+            frontier_x, frontier_y = index_to_point(frontier, self.mymap)
+            delta_x = abs(frontier_x - self.px)
+            delta_y = abs(frontier_y - self.py)
+            distance = sqrt(delta_x**2 + delta_y**2)
 
-            # if we haven't found a frontier cell, add all the neighbors
-            # that aren't walls to the queue
-            else:
-                for neighbor in get_neighbors(current, self.mymap, True):
-                    if(self.mymap.data[neighbor] is not 100 and
-                            neighbor not in visited):
-                        queue.append(neighbor)
+            # if this distance is the smallest we've seen, replace the
+            # previous closest cell with this one
+            if distance < closest_distance:
+                closest_frontier = frontier
+                closest_distance = distance
 
-        # if we've gotten here, it means we never found a frontier cell
-        # obviously, something has gone wrong, so complain to the user
-        print "find_next_target failed to find a suitable frontier cell"
+        # if there's nothing in closest_frontier, there must not have been
+        # any options in frontier_list, so we've failed
+        if closest_frontier is None:
+            print "\n\n\n" + "failed to find the next target frontier"
+
+        # otherwise, send the new target frontier
+        else:
+            print "next target frontier is: " + str(closest_frontier)
+            return closest_frontier
 
 
     def publish_frontiers(self, frontiers):
@@ -154,6 +156,13 @@ class Frontier:
 
         self.frontierCellsPublisher.publish(frontier_cells)
 
+
+    def publish_nearest_frontier(self, frontier):
+        target = PoseStamped()
+        target.header.frame_id = 'map'
+        target.header.stamp = rospy.Time.now()
+        target.pose.position.x, target.pose.position.y = index_to_point(frontier, self.mymap)
+        self.nearestPublisher.publish(target)
 
 
 if __name__ == '__main__':
