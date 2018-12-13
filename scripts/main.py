@@ -88,11 +88,6 @@ def handle_gmap_updates(msg):
     global my_gmap
     my_gmap = msg
 
-#
-# def handle_cost_map_updates(msg):
-#         global my_cmap
-#         my_cmap = msg
-
 
 # grabs pose of the turtlebot
 def odom_callback(msg):

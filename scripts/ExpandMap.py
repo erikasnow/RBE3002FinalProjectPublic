@@ -36,24 +36,24 @@ class ExpandMap:
         :param x: int
         :return: OccupancyGrid
         """
-        map = self.raw_map
-        map_data = list(map.data)
+        cost_map = self.raw_map
+        map_data = list(cost_map.data)
         count = 1
 
         # find all wall cells and make non-wall neighbors walls for x number of times
         while count < x:
-            for index in range(len(map.data)):
-                if map.data[index] > 50:  # if cell is a wall
-                    percent = map.data[index]
-                    neighbors = get_neighbors(index, map, True)  # get all valid neighbors
+            for index in range(len(cost_map.data)):
+                if cost_map.data[index] > 50:  # if cell is a wall
+                    percent = cost_map.data[index]
+                    neighbors = get_neighbors(index, cost_map, True)  # get all valid neighbors
                     for n in neighbors:
                         map_data[n] = percent  # expand the wall into all free neighbors
-            map.data = tuple(map_data)
+            cost_map.data = tuple(map_data)
             count = count + 1
 
         # publish the final expanded map
 
-        self.mapPublisher.publish(map)
+        self.mapPublisher.publish(cost_map)
 
     def fill_gaps(self, map):
         """
