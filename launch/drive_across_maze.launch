@@ -27,7 +27,8 @@
 
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find rbe3002code02)/config/erikas_trying.rviz"/>
 
-  <node name="map" pkg="map_server" type="map_server" args="$(find rbe3002code02)/maps/maze2_map.yaml"/>
+  <node name="map" pkg="map_server" type="map_server" args="$(find rbe3002code02)/maps/maze2_unfinished_map.yaml"/>
+  <node name="map_frame_transform" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 /odom /map 100"/>
 
   <node name="astar" pkg="rbe3002code02" type="A_Star.py" output ="screen"/>
 
