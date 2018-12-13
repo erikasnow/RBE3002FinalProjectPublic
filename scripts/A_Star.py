@@ -39,9 +39,9 @@ class A_Star:
         goal_y = req.goal.pose.position.y
 
         world_start = (start_x, start_y)
-        world_goal = (goal_x, goal_y)
+        goal = (goal_x, goal_y)
         start = world_to_map(world_start, self.my_map)
-        goal = world_to_map(world_goal, self.my_map)
+        #goal = world_to_map(world_goal, self.my_map)
 
         path_cells = self.a_star(start, goal)
         path = self.create_path(path_cells)
@@ -88,7 +88,7 @@ class A_Star:
                 break
 
             wavefront = filter_valid_arr(get_neighbors(current, self.my_map, True), self.my_map)
-            print " filtered wavefront: " + str(wavefront)
+
             for next in wavefront:
                 # publish the frontier and explored cells to rviz for debugging
                 self.paint_frontier(frontier)
@@ -97,7 +97,6 @@ class A_Star:
 
                 # find the total cost of going from start to next
                 cost = cost_so_far[current] + self.move_cost(current, next)
-                print "cost for index " + str(current) + ": " + str(cost)
                 # if this is the first time exploring next, add it in
                 # or, if we just found a faster way to get to next, update it
                 if next not in cost_so_far or cost < cost_so_far[next]:

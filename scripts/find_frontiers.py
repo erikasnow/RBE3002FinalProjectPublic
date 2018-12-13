@@ -103,7 +103,7 @@ class Frontier:
             print "\n\n\n\n\n" + "finished mapping! please run:" + "\n\n"
             print "\t\t" + "rosrun map_server map_saver -f [map_file_name]"
             print "\n\n" + "and then start the other launch file"
-
+        print "frontier cells: " + str(frontier_list)
         return frontier_list
 
 
@@ -126,7 +126,7 @@ class Frontier:
 
             # calculate the distance from the robot's location (px, py)
             # to the current frontier cell
-            frontier_x, frontier_y = index_to_point(frontier, self.mymap)
+            frontier_x, frontier_y = map_to_world(index_to_point(frontier, self.mymap), self.mymap)
             delta_x = abs(frontier_x - self.px)
             delta_y = abs(frontier_y - self.py)
             distance = sqrt(delta_x**2 + delta_y**2)

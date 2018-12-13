@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from math import sqrt, atan2
+from math import sqrt, atan2, pi
 import roslib
 import rospy
 import numpy as np
@@ -38,6 +38,9 @@ class Robot:
         self.target.position.x = rospy.get_param('~x_pos', 0.0)
         self.target.position.y = rospy.get_param('~y_pos', 0.0)
         self.count = 0
+        self.rotate(1)
+        self.rotate(-1)
+
         print("Robot initialized")
 
     # receive and set the target point that the robot should travel to
@@ -142,7 +145,6 @@ class Robot:
 
 if __name__ == '__main__':
     r = Robot()
-    print("Robot initialized")
     rospy.sleep(1)  # make sure the robot has time to receive init values
 
     rospy.spin()

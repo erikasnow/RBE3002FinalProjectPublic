@@ -4,6 +4,8 @@ import sys
 from map_helper import *
 from nav_msgs.srv import GetPlan, GetPlanResponse
 from nav_msgs.msg import Odometry
+from Robot import *
+from math import pi
 
 
 def process_pose_message(msg, x_position, y_position):
@@ -21,7 +23,10 @@ def process_pose_message(msg, x_position, y_position):
     point.y = y_position
 
     world_loc = (point.x, point.y)
+    print "world_loc: " + str(world_loc)
     grid_loc = convert_location(world_loc, my_map)
+    print "grid_loc: " + str(grid_loc)
+
     point.x, point.y = grid_loc
 
     points = []
@@ -68,6 +73,7 @@ def handle_goal(msg):
 
     #goalcell = process_pose_message(msg, x_position, y_position)
     goal_loc, goalcell = process_pose_message(msg, x_position, y_position)
+    print "goal_cell: " + str(goalcell)
     goalPublisher.publish(goalcell)
 
     try:
@@ -148,13 +154,6 @@ if __name__ == '__main__':
     mapSubscriber = rospy.Subscriber('costmap', OccupancyGrid, handle_map_updates)
     rospy.wait_for_message('costmap', OccupancyGrid)
 
-    # subscribe to rviz start and goal cells
-    start_pose_subscriber = rospy.Subscriber('initialpose', PoseWithCovarianceStamped, handle_start_pose)
-    goal_subscriber = rospy.Subscriber('nearest_frontier', PoseStamped, handle_goal)
-
-    # subscribe to robot done messages
-    doneSubscriber = rospy.Subscriber('done', Pose, handle_robot_done)
-
     # publish start, goal, and current location cells to rviz
     initPublisher = rospy.Publisher('initcell', GridCells, queue_size=1)
     goalPublisher = rospy.Publisher('goalcell', GridCells, queue_size=1)
@@ -168,6 +167,13 @@ if __name__ == '__main__':
 
     # publish the navigation target
     targetPublisher = rospy.Publisher('target', Pose, queue_size=1)
+
+    # subscribe to rviz start and goal cells
+    start_pose_subscriber = rospy.Subscriber('initialpose', PoseWithCovarianceStamped, handle_start_pose)
+    fgoal_subscriber = rospy.Subscriber('nearest_frontier', PoseStamped, handle_goal)
+    goal_subscriber = rospy.Subscriber('/move_base_simple/goal', PoseStamped, handle_goal)
+    # subscribe to robot done messages
+    doneSubscriber = rospy.Subscriber('done', Pose, handle_robot_done)
 
     path = Path()
     currpose = Pose()
