@@ -83,10 +83,7 @@ class Robot:
         start_y = self.py
         distance_driven = 0.0
 
-        # print debugging information
         print("\n" + "entered drive_straight")
-        print("starting location: (" + str(start_x) + " , " + str(start_y) + ")")
-        print("distance to travel: " + str(distance_to_travel))
 
         # make a twist message to command the robot at the launch file's speed
         vel_msg = Twist()
@@ -102,8 +99,6 @@ class Robot:
         vel_msg = Twist()
         self.velPublisher.publish(vel_msg)
         print("\n" + "finished driving")
-        print("Desired distance: " + str(distance_to_travel))
-        print("Actual: " + str(distance_driven))
         print("Error: " + str(abs(distance_to_travel - distance_driven)) + "\n\n")
 
     def rotate(self, angle):
@@ -112,10 +107,7 @@ class Robot:
         :param angle: angle to rotate
         :return:
         """
-        # print debugging information
         print("\n" + "entered rotate")
-        print "target angle is: " + str(angle)
-        print "current yaw is:\t " + str(self.yaw)
 
         # make a twist message to command the robot to turn
         vel_msg = Twist()
@@ -132,8 +124,6 @@ class Robot:
         vel_msg.angular.z = 0
         self.velPublisher.publish(vel_msg)
         print("\n" + "finished rotating")
-        print("Desired angle: " + str(angle))
-        print("Actual: " + str(self.yaw))
         print("Error: " + str(abs(angle - self.yaw)))
 
     # receive updates for the pose of the turtlebot
@@ -151,8 +141,8 @@ class Robot:
 
 
 if __name__ == '__main__':
-    print("make robot")
     r = Robot()
+    print("Robot initialized")
     rospy.sleep(1)  # make sure the robot has time to receive init values
 
     rospy.spin()

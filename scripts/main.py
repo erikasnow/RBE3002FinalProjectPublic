@@ -127,9 +127,6 @@ def odom_callback(msg):
 
     start_pose.pose.position.x = msg.pose.pose.position.x
     start_pose.pose.position.y = msg.pose.pose.position.y
-    #quat = msg.pose.pose.orientation
-    #q = [quat.x, quat.y, quat.z, quat.w]
-    #self.roll, self.pitch, self.yaw = euler_from_quaternion(q)
 
 
 def handle_robot_done(msg):
@@ -154,6 +151,7 @@ if __name__ == '__main__':
     mapSubscriber = rospy.Subscriber('map', OccupancyGrid, handle_gmap_updates)
     rospy.wait_for_message('map', OccupancyGrid)
     # cmapSubscriber = rospy.Subscriber('cost_map', OccupancyGrid, handle_cost_map_updates)
+
     # subscribe to rviz start and goal cells
     start_pose_subscriber = rospy.Subscriber('initialpose', PoseWithCovarianceStamped, handle_start_pose)
     goal_subscriber = rospy.Subscriber('move_base_simple/goal', PoseStamped, handle_goal)
@@ -168,9 +166,6 @@ if __name__ == '__main__':
     initPublisher = rospy.Publisher('initcell', GridCells, queue_size=1)
     goalPublisher = rospy.Publisher('goalcell', GridCells, queue_size=1)
     locationPublisher = rospy.Publisher('location', GridCells, queue_size=1)
-
-    # subscribe to odom updates to update the start cell
-    odomSubscriber = rospy.Subscriber('odom', Odometry, odom_callback)
 
     # publish the optimal path
     pathPublisher = rospy.Publisher('path', Path, queue_size=1)
@@ -200,37 +195,31 @@ if __name__ == '__main__':
 
     # main loop
     while not rospy.is_shutdown():
-        #print("top of while loop")
-
-        #rospy.wait_for_message('done', Pose)
-
-        #print("past wait for message")
-
-        #print("last pose: " + str(last_pose_finished))
         # if path hasn't changed and robot finished last pose it moved to
         if currpath.poses == path.poses and currpose == last_pose_finished:
-            print("currpose = last_pose_finished")
-            # publish next waypoint for robot
             currpathcopy.poses.pop(0)
+
             # if there are still poses in the path, keep publishing
             if currpathcopy.poses != []:
-                print("next pose: " + str(currpathcopy.poses[0].pose))
+
+                # publish next waypoint for robot
                 targetPublisher.publish(currpathcopy.poses[0].pose)
-                print("LAST POSE VS CURR POSE: " + str(last_pose_finished) + " -- " + str(currpose))
+
+                # wait for response
                 while last_pose_finished == currpose:
                     rospy.wait_for_message('done', Pose)
                 currpose = last_pose_finished
+
             # if no more poses, break out of while loop and save the map
             else:
                 print("path is finished -- wait for new path")
                 while currpath.poses == path.poses:
-                    rospy.sleep(.5) # hopefully only pauses this node for half a second
+                    rospy.sleep(.5)  # hopefully only pauses this node for half a second
         elif currpath.poses != path.poses:
             print("currpath.poses != path.poses")
             # update the current path
             currpath = path
             currpathcopy = path
             currpose = last_pose_finished
-
 
     rospy.spin()
