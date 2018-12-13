@@ -95,6 +95,15 @@ class Frontier:
                 if next_to_unknown and not close_to_wall:
                     frontier_list.append(cell_index)
 
+        # if there are no frontier cells left, inform the human operators
+        # to save the map and start the next section of the lab
+        # (also, don't assume we're done unless we've been running for at least
+        #  thirty seconds, because that would be way too optimistic)
+        if frontier_list is [] and rospy.get_time() > 30:
+            print "\n\n\n\n\n" + "finished mapping! please run:" + "\n\n"
+            print "\t\t" + "rosrun map_server map_saver -f [map_file_name]"
+            print "\n\n" + "and then start the other launch file"
+
         return frontier_list
 
 
