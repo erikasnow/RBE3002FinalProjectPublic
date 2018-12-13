@@ -61,4 +61,6 @@
     <param name="y_pos" value="$(arg x_pos)" />
   </node>
 
+  <node name="find_frontiers" pkg="rbe3002code02" type="find_frontiers.py" output="screen"/>
+
 </launch>
