@@ -192,29 +192,42 @@ if __name__ == '__main__':
     if len(path.poses) != 0:
         currpose = currpath.poses[0].pose
 
-    rospy.wait_for_message('done', Pose)
+    rospy.wait_for_message('move_base_simple/goal', PoseStamped)
+    print("got button click")
 
     # main loop
     while not rospy.is_shutdown():
+        #print("top of while loop")
+
+        #rospy.wait_for_message('done', Pose)
+
+        #print("past wait for message")
+
         #print("last pose: " + str(last_pose_finished))
         # if path hasn't changed and robot finished last pose it moved to
-        if currpath == path and currpose == last_pose_finished:
+        if currpath.poses == path.poses and currpose == last_pose_finished:
             print("currpose = last_pose_finished")
             # publish next waypoint for robot
             currpathcopy.poses.pop(0)
-            print("next pose: " + str(currpathcopy.poses[0].pose))
-            targetPublisher.publish(currpathcopy.poses[0].pose)
-        elif currpath != path:
-            print("currpath != path")
+            # if there are still poses in the path, keep publishing
+            if currpathcopy.poses != []:
+                print("next pose: " + str(currpathcopy.poses[0].pose))
+                targetPublisher.publish(currpathcopy.poses[0].pose)
+                print("LAST POSE VS CURR POSE: " + str(last_pose_finished) + " -- " + str(currpose))
+                while last_pose_finished == currpose:
+                    rospy.wait_for_message('done', Pose)
+                currpose = last_pose_finished
+            # if no more poses, break out of while loop and save the map
+            else:
+                print("path is finished -- wait for new path")
+                while currpath.poses == path.poses:
+                    rospy.sleep(.5) # hopefully only pauses this node for half a second
+        elif currpath.poses != path.poses:
+            print("currpath.poses != path.poses")
             # update the current path
             currpath = path
             currpathcopy = path
-            #currpose = currpath.poses[0].pose
             currpose = last_pose_finished
-            #print("path: " + str(path))
-            #print("currpath: " + str(currpath))
-            #print("currpose: " + str(currpose))
-            #print("last_pose_finish: " + str(last_pose_finished))
 
 
     rospy.spin()
