@@ -106,7 +106,7 @@ class Frontier:
         #  thirty seconds, because that would be way too optimistic)
         if frontier_list is [] and rospy.get_time() > 30:
             print "\n\n\n\n\n" + "finished mapping! please run:" + "\n\n"
-            print "\t\t" + "rosrun map_server map_saver -f [map_file_name]"
+            print "\t\t" + "rosrun map_server map_saver -f maze2_map"
             print "\n\n" + "and then start the other launch file"
         return frontier_list
 
