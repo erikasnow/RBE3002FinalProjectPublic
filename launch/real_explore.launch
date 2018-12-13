@@ -4,24 +4,13 @@
   <arg name="y_pos" default="0.5"/>
   <arg name="z_pos" default="0.0"/>
 
-  <include file="$(find gazebo_ros)/launch/empty_world.launch">
-    <arg name="world_name" value="$(find rbe3002code02)/worlds/maze2.world"/>
-    <arg name="paused" value="false"/>
-    <arg name="use_sim_time" value="true"/>
-    <arg name="gui" value="true"/>
-    <arg name="headless" value="false"/>
-    <arg name="debug" value="false"/>
-  </include>
+  <!-- what are the commands for the real robot??? -->
 
   <param name="robot_description" command="$(find xacro)/xacro --inorder $(find turtlebot3_description)/urdf/turtlebot3_$(arg model).urdf.xacro"/>
 
-  <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" args="-urdf -model turtlebot3_burger -x $(arg x_pos) -y $(arg y_pos) -z $(arg z_pos) -param robot_description"/>
-
   <param name="tb3_model" value="$(arg model)"/>
 
-  <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen">
-    <param name="publish_frequency" type="double" value="50.0"/>
-  </node>
+  <!-- do I need the thing that goes here from the other file? -->
 
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find rbe3002code02)/config/erikas_trying.rviz"/>
 
@@ -48,6 +37,9 @@
     <param name="y_pos" value="$(arg x_pos)" />
   </node>
 
+  <!-- real robot -->
+  <include file="$(find turtlebot3_bringup)/launch/turtlebot3_model.launch"/>
+
   <!--node name="costmap" pkg="rbe3002code02" type="cost_map.py" output ="screen"/ -->
   <node name="expandmap" pkg="rbe3002code02" type="ExpandMap.py" output ="screen"/>
   
@@ -62,3 +54,5 @@
   </node>
 
 </launch>
+
+  
