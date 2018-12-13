@@ -151,7 +151,7 @@ class A_Star:
         # cost1 = self.my_map.data[index1]
         # cost2 = self.my_map.data[index2]
         # cost = cost2 - cost1
-        print "The cost to travel between " + str(index1) + " and " + str(index2) + " is " + str(cost)
+        #print "The cost to travel between " + str(index1) + " and " + str(index2) + " is " + str(cost)
         return cost
 
     def optimize_path(self, path):
