@@ -21,7 +21,7 @@ class A_Star:
 
         # occupancy grid for the data
         self.my_map = None
-        self.mapSubscriber = rospy.Subscriber('costmap', OccupancyGrid, self.dynamic_map_client)
+        self.mapSubscriber = rospy.Subscriber('map', OccupancyGrid, self.dynamic_map_client)
 
         # publish the frontier and explored cells while running A*
         self.frontierPublisher = rospy.Publisher('frontier', GridCells, queue_size=1)

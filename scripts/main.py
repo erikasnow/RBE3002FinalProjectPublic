@@ -157,7 +157,7 @@ if __name__ == '__main__':
     # subscribe to rviz start and goal cells
     start_pose_subscriber = rospy.Subscriber('initialpose', PoseWithCovarianceStamped, handle_start_pose)
     goal_subscriber = rospy.Subscriber('move_base_simple/goal', PoseStamped, handle_goal)
-
+    
     # subscribe to odom updates to update the start cell
     odomSubscriber = rospy.Subscriber('odom', Odometry, odom_callback)
 
@@ -168,6 +168,9 @@ if __name__ == '__main__':
     initPublisher = rospy.Publisher('initcell', GridCells, queue_size=1)
     goalPublisher = rospy.Publisher('goalcell', GridCells, queue_size=1)
     locationPublisher = rospy.Publisher('location', GridCells, queue_size=1)
+
+    # subscribe to odom updates to update the start cell
+    odomSubscriber = rospy.Subscriber('odom', Odometry, odom_callback)
 
     # publish the optimal path
     pathPublisher = rospy.Publisher('path', Path, queue_size=1)
