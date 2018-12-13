@@ -33,6 +33,9 @@ class Frontier:
             :return:
         """
         self.mymap = msg
+        frontiers = self.find_all_frontiers()
+        self.publish_frontiers(frontiers)
+        self.find_next_target(frontiers)
 
 
     def handle_odom(self, msg):
@@ -86,20 +89,52 @@ class Frontier:
                     if close_to_wall:
                         break
 
-                # if the cell meets the qualifications of being frontier,
-                # add it to the frontier list as a Point()
+                # if the cell is a frontier, add it to the frontier list
                 if next_to_unknown and not close_to_wall:
-                    cell_x, cell_y = index_to_point(cell_index, self.mymap)
-                    point = Point()
-                    point.x = cell_x
-                    point.y = cell_y
-                    frontier_list.append(point)
+                    frontier_list.append(cell_index)
 
         return frontier_list
 
 
     def find_next_target(self, frontier_list):
-        pass # TODO
+        """
+            run a breadth-first search from the robot's location until a
+            cell from the list of frontiers is found
+            :param frontier_list: an array of Point with all the good frontiers
+            :return: a Point of the best fronier to travel to next
+        """
+        # TODO: this should actually find the first frontier cell that is a
+        # certain distance away from the robot, so we can avoid getting stuck
+
+        print "find_frontier is looking for the next target"
+
+        # find the robot's current index to search from
+        location = (self.px, self.py)
+        start_index = point_to_index(location, self.mymap)
+
+        # run a breadth-first search until we find a frontier cell
+        queue = [start_index]
+        visited = []
+        while queue:
+            current = queue.pop(0)
+            visited.append(current)
+
+            # if we've found a frontier cell, return it as a point
+            if current in frontier_list:
+                print "next target index is:\n" + str(current)
+                return current
+
+            # if we haven't found a frontier cell, add all the neighbors
+            # that aren't walls to the queue
+            else:
+                for neighbor in get_neighbors(current, self.mymap, True):
+                    if(self.mymap.data[neighbor] is not 100 and
+                            neighbor not in visited):
+                        queue.append(neighbor)
+
+        # if we've gotten here, it means we never found a frontier cell
+        # obviously, something has gone wrong, so complain to the user
+        print "find_next_target failed to find a suitable frontier cell"
 
 
     def publish_frontiers(self, frontiers):
@@ -113,7 +148,8 @@ class Frontier:
         # process all of the points to allign to the rviz grid, and add them
         for cell in frontiers:
             point = Point()
-            (point.x, point.y) = map_to_world((cell.x, cell.y) , self.mymap)
+            cell_coordinates = index_to_point(cell, self.mymap)
+            (point.x, point.y) = map_to_world(cell_coordinates, self.mymap)
             frontier_cells.cells.append(point)
 
         self.frontierCellsPublisher.publish(frontier_cells)
@@ -122,13 +158,8 @@ class Frontier:
 
 if __name__ == '__main__':
     f = Frontier()
-    rospy.sleep(1)
-    rospy.wait_for_message('map', OccupancyGrid)
-
+    print "find_frontiers is waiting for a costmap message"
+    rospy.wait_for_message('costmap', OccupancyGrid)
     print "find_frontiers is ready"
 
-    while not rospy.is_shutdown():
-
-        mapmessagecontents = rospy.wait_for_message('map', OccupancyGrid)
-        frontiers = f.find_all_frontiers()
-        f.publish_frontiers(frontiers)
+    rospy.spin()
