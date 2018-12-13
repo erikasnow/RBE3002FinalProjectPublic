@@ -131,6 +131,7 @@ def odom_callback(msg):
     #q = [quat.x, quat.y, quat.z, quat.w]
     #self.roll, self.pitch, self.yaw = euler_from_quaternion(q)
 
+
 def handle_robot_done(msg):
     global last_pose_finished
     last_pose_finished = msg
@@ -159,6 +160,9 @@ if __name__ == '__main__':
 
     # subscribe to odom updates to update the start cell
     odomSubscriber = rospy.Subscriber('odom', Odometry, odom_callback)
+
+    # subscribe to robot done messages
+    doneSubscriber = rospy.Subscriber('done', Pose, handle_robot_done)
 
     # publish start, goal, and current location cells to rviz
     initPublisher = rospy.Publisher('initcell', GridCells, queue_size=1)
@@ -192,17 +196,25 @@ if __name__ == '__main__':
 
     # main loop
     while not rospy.is_shutdown():
+        #print("last pose: " + str(last_pose_finished))
         # if path hasn't changed and robot finished last pose it moved to
         if currpath == path and currpose == last_pose_finished:
+            print("currpose = last_pose_finished")
             # publish next waypoint for robot
             currpathcopy.poses.pop(0)
             print("next pose: " + str(currpathcopy.poses[0].pose))
             targetPublisher.publish(currpathcopy.poses[0].pose)
         elif currpath != path:
+            print("currpath != path")
             # update the current path
             currpath = path
             currpathcopy = path
-            currpose = currpath.poses[0].pose
+            #currpose = currpath.poses[0].pose
+            currpose = last_pose_finished
+            #print("path: " + str(path))
+            #print("currpath: " + str(currpath))
+            #print("currpose: " + str(currpose))
+            #print("last_pose_finish: " + str(last_pose_finished))
 
 
     rospy.spin()

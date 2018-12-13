@@ -34,23 +34,23 @@ class Robot:
         self.yaw = 0
 
         # target point to travel to, initialized from the launch file
-        self.target = Point()
-        self.target.x = rospy.get_param('~x_pos', 0.0)
-        self.target.y = rospy.get_param('~y_pos', 0.0)
+        self.target = Pose()
+        self.target.position.x = rospy.get_param('~x_pos', 0.0)
+        self.target.position.y = rospy.get_param('~y_pos', 0.0)
         self.count = 0
         print("Robot initialized")
 
     # receive and set the target point that the robot should travel to
     # then, start navigating towards it
     def set_target(self, target_pose):
-        self.target = target_pose.position  # drop orientation, we don't use it
+        self.target = target_pose
         print("\n" + "navigation target updated:\n" + str(self.target))
         self.nav_to_point()
 
     def nav_to_point(self):
         goal = self.target
-        goalx = goal.x
-        goaly = goal.y
+        goalx = goal.position.x
+        goaly = goal.position.y
         currx = self.px
         curry = self.py
 
@@ -69,6 +69,7 @@ class Robot:
 
         # let main node know robot has finished traveling
         self.donePublisher.publish(goal)
+        print("robot published done")
 
     def drive_straight(self, distance_to_travel):
         """
