@@ -86,15 +86,15 @@ class Frontier:
                     # check the neighbors of the neighbor to find walls
                     # within 2 cells of the robot
                     # we don't want the robot going too close to a known wall
-                    for nni in get_neighbors(neighbor_index, self.mymap, True):
-                        if self.mymap.data[nni] is 100:
-                            close_to_wall = True
-                            break
+                    #for nni in get_neighbors(neighbor_index, self.mymap, True):
+                    #    if self.mymap.data[nni] is 100:
+                    #        close_to_wall = True
+                    #        break
 
                     # if we already know the cell is close to a wall,
                     # skip checking the rest of the neighbors
-                    if close_to_wall:
-                        break
+                    #if close_to_wall:
+                    #    break
 
                 # if the cell is a frontier, add it to the frontier list
                 if next_to_unknown and not close_to_wall:

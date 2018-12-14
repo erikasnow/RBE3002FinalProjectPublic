@@ -146,5 +146,6 @@ class Robot:
 if __name__ == '__main__':
     r = Robot()
     rospy.sleep(1)  # make sure the robot has time to receive init values
+    #r.rotate(.5)  # hopefully gets gmapping info
 
     rospy.spin()

@@ -6,6 +6,8 @@ from nav_msgs.srv import GetPlan, GetPlanResponse
 from nav_msgs.msg import Odometry
 from Robot import *
 from math import pi
+import tf
+from tf.transformations import euler_from_quaternion
 
 
 def process_pose_message(msg, x_position, y_position):
@@ -178,6 +180,9 @@ if __name__ == '__main__':
     # publish the navigation target
     targetPublisher = rospy.Publisher('target', Pose, queue_size=1)
 
+    # publish a velocity message when the robot gets stuck
+    velPublisher = rospy.Publisher('cmd_vel', Twist, queue_size=1)
+
     # subscribe to rviz start and goal cells
     start_pose_subscriber = rospy.Subscriber('initialpose', PoseWithCovarianceStamped, handle_start_pose)
     fgoal_subscriber = rospy.Subscriber('nearest_frontier', PoseStamped, handle_goal)
@@ -249,8 +254,26 @@ if __name__ == '__main__':
             # if no more poses, break out of while loop and save the map
             else:
                 print("path is finished -- wait for new path")
-                while currpath.poses == path.poses:
-                    rospy.sleep(.5)  # hopefully only pauses this node for half a second
+                # we need to tell the robot to rotate a bit during this in case the sensor refuses to update
+                # grab the last pose in the path
+                #spin = currpath.poses[-1].pose
+                #spin.orientation.x =
+
+                #targetPublisher.publish(spin)
+                vel_msg = Twist()
+                #while currpath.poses == path.poses:
+                vel_msg.angular.z = .1
+                velPublisher.publish(vel_msg)
+                rospy.sleep(5)
+
+                vel_msg.angular.z = 0
+                velPublisher.publish(vel_msg)
+
+                call_astar()
+                currgoal = goal_pose
+
+                currpath = path
+                currpathcopy = path
 
         elif currpath.poses != path.poses:
             print("currpath.poses != path.poses")
